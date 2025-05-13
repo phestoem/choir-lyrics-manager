@@ -1,0 +1,322 @@
+/**
+ * Admin styles for Choir Lyrics Manager
+ *
+ * @package    Choir_Lyrics_Manager
+ */
+
+/* General Admin Styles */
+.clm-settings-page {
+    max-width: 1200px;
+}
+
+.clm-settings-page h1 {
+    margin-bottom: 20px;
+}
+
+/* Dashboard Overview Boxes */
+.clm-dashboard-summary {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+    gap: 15px;
+}
+
+.clm-summary-box {
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    min-width: 200px;
+    flex: 1 1 200px;
+}
+
+.clm-summary-icon {
+    margin-right: 15px;
+}
+
+.clm-summary-icon .dashicons {
+    font-size: 30px;
+    width: 30px;
+    height: 30px;
+    color: #3498db;
+}
+
+.clm-summary-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.clm-summary-value {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.clm-summary-label {
+    font-size: 14px;
+    color: #777;
+}
+
+/* Charts Container */
+.clm-chart-container-wrap {
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.clm-chart-filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.clm-filter-group {
+    margin-bottom: 10px;
+    margin-right: 15px;
+}
+
+.clm-filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.clm-filter-group select {
+    min-width: 200px;
+}
+
+.clm-chart-container {
+    width: 100%;
+    height: 400px;
+    position: relative;
+}
+
+/* Dashboard Tables */
+.clm-dashboard-tables {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.clm-dashboard-table {
+    flex: 1 1 calc(50% - 20px);
+    min-width: 300px;
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 20px;
+}
+
+.clm-dashboard-table h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.clm-dashboard-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.clm-dashboard-table th,
+.clm-dashboard-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.clm-dashboard-table th {
+    font-weight: 600;
+}
+
+/* Meta Box Styles */
+.clm-meta-box-container {
+    margin-bottom: 15px;
+}
+
+.clm-meta-field {
+    margin-bottom: 15px;
+}
+
+.clm-meta-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.clm-meta-field .description {
+    color: #777;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+/* Media Fields */
+.clm-media-field {
+    margin-bottom: 20px;
+}
+
+.clm-media-preview {
+    margin-top: 10px;
+    border: 1px solid #e5e5e5;
+    padding: 10px;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.clm-media-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.clm-media-item .dashicons {
+    margin-right: 10px;
+    color: #555;
+}
+
+.clm-audio-player {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.clm-remove-media {
+    margin-left: 10px;
+}
+
+/* Practice Tracks Management */
+.clm-practice-track-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.clm-practice-track-preview {
+    margin-top: 10px;
+}
+
+.clm-add-practice-track {
+    margin-top: 10px;
+}
+
+/* Lyrics in Album Meta Box */
+.clm-lyrics-list {
+    margin-top: 15px;
+}
+
+.clm-sortable-lyrics {
+    margin-top: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    padding: 10px;
+    border-radius: 4px;
+    min-height: 50px;
+}
+
+.clm-sortable-lyrics li {
+    padding: 8px;
+    margin-bottom: 5px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.clm-remove-lyric {
+    cursor: pointer;
+    color: #a00;
+}
+
+/* Settings Page */
+.clm-settings-page fieldset {
+    margin-bottom: 15px;
+}
+
+.clm-settings-page label {
+    margin-right: 10px;
+}
+
+.clm-settings-page input[type="checkbox"] + label,
+.clm-settings-page input[type="radio"] + label {
+    display: inline;
+}
+
+/* Dashboard Widgets */
+.clm-dashboard-stats {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.clm-stat-box {
+    flex: 1 1 calc(25% - 15px);
+    min-width: 100px;
+    margin-right: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.clm-stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.clm-stat-label {
+    color: #666;
+    font-size: 13px;
+}
+
+.clm-widget-footer {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    text-align: right;
+}
+
+/* Shortcode Meta Box */
+#clm_lyric_shortcodes code,
+#clm_album_shortcodes code {
+    display: block;
+    padding: 10px;
+    margin: 10px 0;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+/* Responsive Admin */
+@media screen and (max-width: 782px) {
+    .clm-summary-box {
+        flex: 1 1 100%;
+    }
+    
+    .clm-dashboard-table {
+        flex: 1 1 100%;
+    }
+    
+    .clm-stat-box {
+        flex: 1 1 calc(50% - 15px);
+    }
+}

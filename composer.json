@@ -1,0 +1,9 @@
+{
+  "name": "phesto/choir-lyrics-manager",
+  "type": "wordpress-plugin",
+  "autoload": {
+    "psr-4": {
+      "CLM\\": "includes/"
+    }
+  }
+}
