@@ -154,10 +154,19 @@
     font-weight: 600;
 }
 
+.clm-meta-field input[type="text"],
+.clm-meta-field input[type="number"],
+.clm-meta-field textarea,
+.clm-meta-field select {
+    width: 100%;
+    max-width: 600px;
+}
+
 .clm-meta-field .description {
     color: #777;
     font-style: italic;
     margin-top: 5px;
+    font-size: 13px;
 }
 
 /* Media Fields */
@@ -187,10 +196,17 @@
 .clm-audio-player {
     margin-top: 10px;
     width: 100%;
+    max-width: 400px;
 }
 
 .clm-remove-media {
     margin-left: 10px;
+    color: #a00;
+    cursor: pointer;
+}
+
+.clm-remove-media:hover {
+    color: #dc3232;
 }
 
 /* Practice Tracks Management */
@@ -236,14 +252,30 @@
     align-items: center;
 }
 
+.clm-sortable-lyrics li:hover {
+    background: #f5f5f5;
+}
+
 .clm-remove-lyric {
     cursor: pointer;
     color: #a00;
 }
 
+.clm-remove-lyric:hover {
+    color: #dc3232;
+}
+
 /* Settings Page */
 .clm-settings-page fieldset {
     margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ccd0d4;
+    background: #fff;
+}
+
+.clm-settings-page legend {
+    font-weight: 600;
+    padding: 0 10px;
 }
 
 .clm-settings-page label {
@@ -253,6 +285,7 @@
 .clm-settings-page input[type="checkbox"] + label,
 .clm-settings-page input[type="radio"] + label {
     display: inline;
+    margin-left: 5px;
 }
 
 /* Dashboard Widgets */
@@ -304,6 +337,8 @@
     border-radius: 3px;
     font-family: monospace;
     word-break: break-all;
+    user-select: all;
+    cursor: text;
 }
 
 /* Responsive Admin */
@@ -319,4 +354,48 @@
     .clm-stat-box {
         flex: 1 1 calc(50% - 15px);
     }
+    
+    .clm-filter-group {
+        flex: 1 1 100%;
+        margin-right: 0;
+    }
+    
+    .clm-filter-group select {
+        width: 100%;
+    }
+}
+
+/* WordPress Admin Compatibility */
+.wp-admin .clm-button {
+    text-decoration: none;
+}
+
+.wp-admin .clm-loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notices and Messages */
+.clm-notice {
+    margin: 15px 0;
+    padding: 12px;
+    border-left: 4px solid #00a0d2;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.clm-notice.error {
+    border-color: #dc3232;
+}
+
+.clm-notice.success {
+    border-color: #46b450;
+}
+
+.clm-notice.warning {
+    border-color: #ffb900;
 }

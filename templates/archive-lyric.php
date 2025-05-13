@@ -10,12 +10,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get settings
-$settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
-$archive_title = $settings->get_setting('archive_title', __('Choir Lyrics', 'choir-lyrics-manager'));
-$items_per_page = $settings->get_setting('items_per_page', 10);
+	// Get settings
+	$settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
+	$archive_title = $settings->get_setting('archive_title', __('Choir Lyrics', 'choir-lyrics-manager'));
+	$items_per_page = isset($_GET['per_page']) ? intval($_GET['per_page']) : $settings->get_setting('items_per_page', 20);
 
-get_header();
+	get_header();
 ?>
 
 <div class="clm-container clm-archive">
@@ -148,20 +148,6 @@ get_header();
                     </select>
                 </div>
                 
-                <!-- Year Range Filter -->
-                <div class="clm-filter-group">
-                    <label><?php _e('Year Range', 'choir-lyrics-manager'); ?></label>
-                    <div class="clm-year-range">
-                        <input type="number" name="year_from" placeholder="<?php _e('From', 'choir-lyrics-manager'); ?>" 
-                               value="<?php echo isset($_GET['year_from']) ? esc_attr($_GET['year_from']) : ''; ?>" 
-                               min="1000" max="<?php echo date('Y'); ?>">
-                        <span>-</span>
-                        <input type="number" name="year_to" placeholder="<?php _e('To', 'choir-lyrics-manager'); ?>" 
-                               value="<?php echo isset($_GET['year_to']) ? esc_attr($_GET['year_to']) : ''; ?>" 
-                               min="1000" max="<?php echo date('Y'); ?>">
-                    </div>
-                </div>
-                
                 <!-- Sort Options -->
                 <div class="clm-filter-group">
                     <label for="clm-sort-select"><?php _e('Sort By', 'choir-lyrics-manager'); ?></label>
@@ -170,7 +156,6 @@ get_header();
                             <option value="title" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : 'title', 'title'); ?>><?php _e('Title', 'choir-lyrics-manager'); ?></option>
                             <option value="date" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : '', 'date'); ?>><?php _e('Date Added', 'choir-lyrics-manager'); ?></option>
                             <option value="modified" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : '', 'modified'); ?>><?php _e('Last Modified', 'choir-lyrics-manager'); ?></option>
-                            <option value="composer" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : '', 'composer'); ?>><?php _e('Composer', 'choir-lyrics-manager'); ?></option>
                         </select>
                         <select name="order" class="clm-filter-select">
                             <option value="ASC" <?php selected(isset($_GET['order']) ? $_GET['order'] : 'ASC', 'ASC'); ?>><?php _e('Ascending', 'choir-lyrics-manager'); ?></option>
@@ -252,52 +237,58 @@ get_header();
                             </div>
                             
                             <div class="clm-item-actions">
-								<a href="<?php the_permalink(); ?>" class="clm-button"><?php _e('View Lyric', 'choir-lyrics-manager'); ?></a>
-								
-								<?php if (is_user_logged_in()): ?>
-									<button class="clm-button clm-create-playlist-button" data-lyric-id="<?php the_ID(); ?>">
-										<?php _e('Create Playlist', 'choir-lyrics-manager'); ?>
-									</button>
-									
-									<div class="clm-create-playlist-form" style="display:none;" data-lyric-id="<?php the_ID(); ?>">
-										<h4><?php _e('Create New Playlist', 'choir-lyrics-manager'); ?></h4>
-										
-										<div class="clm-form-field">
-											<label><?php _e('Playlist Name', 'choir-lyrics-manager'); ?></label>
-											<input type="text" class="clm-playlist-name" placeholder="<?php _e('Enter playlist name', 'choir-lyrics-manager'); ?>">
-										</div>
-										
-										<div class="clm-form-field">
-											<label><?php _e('Description (optional)', 'choir-lyrics-manager'); ?></label>
-											<textarea class="clm-playlist-description" rows="3"></textarea>
-										</div>
-										
-										<div class="clm-form-field">
-											<label><?php _e('Visibility', 'choir-lyrics-manager'); ?></label>
-											<div class="clm-radio-group">
-												<label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="private" checked> <?php _e('Private', 'choir-lyrics-manager'); ?></label>
-												<label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="public"> <?php _e('Public', 'choir-lyrics-manager'); ?></label>
-											</div>
-										</div>
-										
-										<div class="clm-form-actions">
-											<button class="clm-submit-playlist clm-button clm-button-primary" data-lyric-id="<?php the_ID(); ?>">
-												<?php _e('Create', 'choir-lyrics-manager'); ?>
-											</button>
-											<button class="clm-cancel-playlist clm-button">
-												<?php _e('Cancel', 'choir-lyrics-manager'); ?>
-											</button>
-										</div>
-									</div>
-								<?php endif; ?>
-							</div>
+                                <a href="<?php the_permalink(); ?>" class="clm-button"><?php _e('View Lyric', 'choir-lyrics-manager'); ?></a>
+                                
+                                <?php if (is_user_logged_in()): ?>
+                                    <button class="clm-button clm-create-playlist-button" data-lyric-id="<?php the_ID(); ?>">
+                                        <?php _e('Create Playlist', 'choir-lyrics-manager'); ?>
+                                    </button>
+                                    
+                                    <div class="clm-create-playlist-form" style="display:none;" data-lyric-id="<?php the_ID(); ?>">
+                                        <h4><?php _e('Create New Playlist', 'choir-lyrics-manager'); ?></h4>
+                                        
+                                        <div class="clm-form-field">
+                                            <label><?php _e('Playlist Name', 'choir-lyrics-manager'); ?></label>
+                                            <input type="text" class="clm-playlist-name" placeholder="<?php _e('Enter playlist name', 'choir-lyrics-manager'); ?>">
+                                        </div>
+                                        
+                                        <div class="clm-form-field">
+                                            <label><?php _e('Description (optional)', 'choir-lyrics-manager'); ?></label>
+                                            <textarea class="clm-playlist-description" rows="3"></textarea>
+                                        </div>
+                                        
+                                        <div class="clm-form-field">
+                                            <label><?php _e('Visibility', 'choir-lyrics-manager'); ?></label>
+                                            <div class="clm-radio-group">
+                                                <label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="private" checked> <?php _e('Private', 'choir-lyrics-manager'); ?></label>
+                                                <label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="public"> <?php _e('Public', 'choir-lyrics-manager'); ?></label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="clm-form-actions">
+                                            <button class="clm-submit-playlist clm-button clm-button-primary" data-lyric-id="<?php the_ID(); ?>">
+                                                <?php _e('Create', 'choir-lyrics-manager'); ?>
+                                            </button>
+                                            <button class="clm-cancel-playlist clm-button">
+                                                <?php _e('Cancel', 'choir-lyrics-manager'); ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </li>
                 <?php endwhile; ?>
             </ul>
-            
-            <!-- Enhanced Pagination -->
-            <div class="clm-pagination" id="clm-pagination">
+        <?php else: ?>
+            <div class="clm-no-results">
+                <p class="clm-notice"><?php _e('No lyrics found matching your criteria.', 'choir-lyrics-manager'); ?></p>
+                <p><?php _e('Try adjusting your filters or search terms.', 'choir-lyrics-manager'); ?></p>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Enhanced Pagination with ID -->
+        <div id="clm-pagination" class="clm-pagination">
             <?php
             // Initial pagination for non-AJAX loads
             if ($wp_query->max_num_pages > 1) {
@@ -315,17 +306,8 @@ get_header();
                     <input type="number" id="clm-page-jump-input" min="1" max="<?php echo $wp_query->max_num_pages; ?>" value="<?php echo get_query_var('paged') ?: 1; ?>">
                     <button id="clm-page-jump-button" class="clm-button-small"><?php _e('Go', 'choir-lyrics-manager'); ?></button>
                 </div>
-            <?php } else { ?>
-                <!-- Empty container for AJAX to populate -->
-                <div class="clm-pagination-placeholder"></div>
             <?php } ?>
         </div>
-        <?php else: ?>
-            <div class="clm-no-results">
-                <p class="clm-notice"><?php _e('No lyrics found matching your criteria.', 'choir-lyrics-manager'); ?></p>
-                <p><?php _e('Try adjusting your filters or search terms.', 'choir-lyrics-manager'); ?></p>
-            </div>
-        <?php endif; ?>
     </div>
 </div>
 

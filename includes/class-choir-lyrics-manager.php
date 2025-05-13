@@ -256,8 +256,37 @@ class Choir_Lyrics_Manager {
         $this->loader->add_action('wp_ajax_nopriv_clm_ajax_filter', $plugin_public, 'handle_ajax_filter');
         $this->loader->add_action('wp_ajax_clm_shortcode_filter', $plugin_public, 'handle_shortcode_filter');
         $this->loader->add_action('wp_ajax_nopriv_clm_shortcode_filter', $plugin_public, 'handle_shortcode_filter');
+		$this->loader->add_action('wp_ajax_clm_test_nonce', $plugin_public, 'clm_test_nonce_handler');
+        $this->loader->add_action('wp_ajax_nopriv_clm_test_nonce', $plugin_public, 'clm_test_nonce_handler');
+		
+		// Add these to your AJAX registration
+		$this->loader->add_action('wp_ajax_clm_ajax_filter_test', $plugin_public, 'handle_ajax_filter_test');
+		$this->loader->add_action('wp_ajax_nopriv_clm_ajax_filter_test', $plugin_public, 'handle_ajax_filter_test');
+		
     }
 
+
+public function clm_test_nonce_handler() {
+    $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
+    
+    // Test the nonce verification
+    $verify_result = wp_verify_nonce($nonce, 'clm_filter_nonce');
+    $ajax_check = check_ajax_referer('clm_filter_nonce', 'nonce', false);
+    
+    // Create a fresh nonce for comparison
+    $fresh_nonce = wp_create_nonce('clm_filter_nonce');
+    
+    wp_send_json_success(array(
+        'received_nonce' => $nonce,
+        'fresh_nonce' => $fresh_nonce,
+        'verify_result' => $verify_result,
+        'ajax_check' => $ajax_check,
+        'user_logged_in' => is_user_logged_in(),
+        'user_id' => get_current_user_id(),
+        'nonces_match' => ($nonce === $fresh_nonce),
+        'session_token' => wp_get_session_token(),
+    ));
+}
     /**
      * Initialize helper functions
      *

@@ -226,9 +226,15 @@ class CLM_Admin {
      */
     public function display_plugin_dashboard() {
         // Get data for dashboard
-        $lyrics_count = wp_count_posts('clm_lyric')->publish;
-        $albums_count = wp_count_posts('clm_album')->publish;
-        $practice_logs_count = wp_count_posts('clm_practice_log')->publish;
+    $lyric_stats = wp_count_posts('clm_lyric');
+    $album_stats = wp_count_posts('clm_album');
+    $practice_log_stats = wp_count_posts('clm_practice_log');
+    
+    // Safely access the publish property
+    $lyrics_count = isset($lyric_stats->publish) ? $lyric_stats->publish : 0;
+    $albums_count = isset($album_stats->publish) ? $album_stats->publish : 0;
+    $practice_logs_count = isset($practice_log_stats->publish) ? $practice_log_stats->publish : 0;
+    
         
         $recent_lyrics = get_posts(array(
             'post_type' => 'clm_lyric',
