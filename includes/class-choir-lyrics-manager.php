@@ -1,6 +1,6 @@
 <?php
 /**
- * The core plugin class.
+ * The core plugin class - Fixed version with proper Events integration
  *
  * This is used to define internationalization, admin-specific hooks,
  * and public-facing site hooks.
@@ -138,6 +138,26 @@ class Choir_Lyrics_Manager {
         require_once CLM_PLUGIN_DIR . 'includes/class-clm-settings.php';
 
         /**
+         * The class responsible for member management.
+         */
+        require_once CLM_PLUGIN_DIR . 'includes/class-clm-members.php';
+
+        /**
+         * The class responsible for skills tracking.
+         */
+        require_once CLM_PLUGIN_DIR . 'includes/class-clm-skills.php';
+
+        /**
+         * The class responsible for event management.
+         */
+        require_once CLM_PLUGIN_DIR . 'includes/class-clm-events.php';
+
+        /**
+         * The class responsible for member admin functionality.
+         */
+        require_once CLM_PLUGIN_DIR . 'includes/class-clm-admin-members.php';
+
+        /**
          * The class responsible for admin-specific functionality.
          */
         require_once CLM_PLUGIN_DIR . 'includes/class-clm-admin.php';
@@ -195,6 +215,38 @@ class Choir_Lyrics_Manager {
         $plugin_taxonomies = new CLM_Taxonomies($this->get_plugin_name(), $this->get_version());
         $this->loader->add_action('init', $plugin_taxonomies, 'register_taxonomies');
         
+        // Members hooks
+        $plugin_members = new CLM_Members($this->get_plugin_name(), $this->get_version());
+        $this->loader->add_action('init', $plugin_members, 'register_member_cpt');
+        $this->loader->add_action('init', $plugin_members, 'register_voice_type_taxonomy');
+        $this->loader->add_action('add_meta_boxes', $plugin_members, 'register_member_meta_boxes');
+        $this->loader->add_action('save_post', $plugin_members, 'save_member_meta');
+        $this->loader->add_filter('manage_clm_member_posts_columns', $plugin_members, 'set_custom_member_columns');
+        $this->loader->add_action('manage_clm_member_posts_custom_column', $plugin_members, 'custom_member_column', 10, 2);
+        $this->loader->add_action('admin_head', $plugin_members, 'add_member_admin_styles');
+        
+        // Member admin hooks
+        $plugin_admin_members = new CLM_Admin_Members($this->get_plugin_name(), $this->get_version());
+        $this->loader->add_action('admin_menu', $plugin_admin_members, 'add_admin_menu');
+        
+        // Skills hooks
+        $plugin_skills = new CLM_Skills($this->get_plugin_name(), $this->get_version());
+        $this->loader->add_action('add_meta_boxes', $plugin_skills, 'add_skills_meta_box');
+        $this->loader->add_action('admin_enqueue_scripts', $plugin_skills, 'enqueue_admin_scripts');
+        $this->loader->add_action('wp_ajax_clm_update_skill', $plugin_skills, 'ajax_update_skill');
+        $this->loader->add_action('wp_ajax_clm_log_practice', $plugin_skills, 'ajax_log_practice');
+        
+        // Events hooks
+        $plugin_events = new CLM_Events($this->get_plugin_name(), $this->get_version());
+        $this->loader->add_action('init', $plugin_events, 'register_event_post_type');
+        $this->loader->add_action('init', $plugin_events, 'register_event_taxonomies');
+        $this->loader->add_action('add_meta_boxes', $plugin_events, 'add_event_meta_boxes');
+        $this->loader->add_action('save_post', $plugin_events, 'save_event_meta');
+        $this->loader->add_filter('manage_clm_event_posts_columns', $plugin_events, 'add_event_columns');
+        $this->loader->add_action('manage_clm_event_posts_custom_column', $plugin_events, 'display_event_columns', 10, 2);
+        $this->loader->add_filter('manage_edit-clm_event_sortable_columns', $plugin_events, 'make_event_columns_sortable');
+        $this->loader->add_action('pre_get_posts', $plugin_events, 'handle_event_column_sorting');
+        
         // Media hooks
         $plugin_media = new CLM_Media($this->get_plugin_name(), $this->get_version());
         $this->loader->add_action('add_meta_boxes', $plugin_media, 'add_media_meta_boxes');
@@ -243,6 +295,10 @@ class Choir_Lyrics_Manager {
         
         // Register shortcodes
         $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
+        
+        // Register event shortcodes
+        $plugin_events = new CLM_Events($this->get_plugin_name(), $this->get_version());
+        $this->loader->add_action('init', $plugin_events, 'register_shortcodes');
         
         // Add template filters
         $this->loader->add_filter('single_template', $plugin_public, 'load_lyric_template');

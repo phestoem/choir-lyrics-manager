@@ -30,6 +30,41 @@ class CLM_Activator {
         
         // Flush rewrite rules
         flush_rewrite_rules();
+		
+		// Add default event types
+		$default_event_types = array(
+			'concert' => __('Concert', 'choir-lyrics-manager'),
+			'competition' => __('Competition', 'choir-lyrics-manager'),
+			'rehearsal' => __('Rehearsal', 'choir-lyrics-manager'),
+			'workshop' => __('Workshop', 'choir-lyrics-manager'),
+			'recording' => __('Recording Session', 'choir-lyrics-manager'),
+			'tour' => __('Tour', 'choir-lyrics-manager'),
+		);
+
+		foreach ($default_event_types as $slug => $name) {
+			if (!term_exists($slug, 'clm_event_type')) {
+				wp_insert_term($name, 'clm_event_type', array('slug' => $slug));
+			}
+		}
+		
+		// Update database version
+         update_option('clm_db_version', '1.1.0'); // Increment version
+		
+		// Add capabilities for events
+		$events = new CLM_Events('choir-lyrics-manager', CLM_VERSION);
+		$events->add_capabilities();
+		
+		// Add capabilities for members
+		CLM_Members::add_capabilities();
+		
+		// Create default voice types
+		CLM_Members::create_default_voice_types();
+		
+		// Create skills tracking table
+		CLM_Skills::create_skills_table();
+		
+		// Run database updates
+        self::update_database();
     }
     
     /**
@@ -61,6 +96,9 @@ class CLM_Activator {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
         
+        // Create member skills table
+        CLM_Skills::create_skills_table();
+        
         // Update DB version
         update_option('clm_db_version', CLM_VERSION);
     }
@@ -83,7 +121,9 @@ class CLM_Activator {
             'practice_notification' => 7,
             'primary_color' => '#3498db',
             'secondary_color' => '#2ecc71',
-            'font_size' => 16
+            'font_size' => 16,
+            'enable_skills_tracking' => true,
+            'enable_member_profiles' => true,
         );
         
         // Only add if not already set
@@ -163,4 +203,15 @@ class CLM_Activator {
             wp_schedule_event(time(), 'weekly', 'clm_weekly_practice_reminder');
         }
     }
+	
+	// Add a new method for database updates
+	private static function update_database() {
+		$current_db_version = get_option('clm_db_version', '1.0.0');
+		
+		if (version_compare($current_db_version, '1.1.0', '<')) {
+			// Update skills table
+			CLM_Skills::create_skills_table();
+			update_option('clm_db_version', '1.1.0');
+		}
+	}
 }

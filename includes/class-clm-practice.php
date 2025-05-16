@@ -44,68 +44,143 @@ class CLM_Practice {
      * @since    1.0.0
      */
     public function update_practice_log() {
-        // Check if user is logged in
-        if (!is_user_logged_in()) {
-            wp_send_json_error(array('message' => __('You must be logged in to track practice.', 'choir-lyrics-manager')));
-        }
-        
-        // Check nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_practice_nonce')) {
-            wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
-        }
-        
-        // Check required fields
-        if (empty($_POST['lyric_id']) || empty($_POST['duration']) || empty($_POST['confidence'])) {
-            wp_send_json_error(array('message' => __('Required fields are missing.', 'choir-lyrics-manager')));
-        }
-        
-        $user_id = get_current_user_id();
-        $lyric_id = intval($_POST['lyric_id']);
-        $duration = intval($_POST['duration']);
-        $confidence = intval($_POST['confidence']);
-        $notes = isset($_POST['notes']) ? sanitize_textarea_field($_POST['notes']) : '';
-        
-        // Validate field values
-        if ($confidence < 1 || $confidence > 5) {
-            $confidence = 3; // Default to middle value if invalid
-        }
-        
-        if ($duration < 1) {
-            $duration = 1; // Minimum 1 minute
-        }
-        
-        // Create practice log entry
-        $log_data = array(
-            'post_title'    => sprintf(__('Practice: %s', 'choir-lyrics-manager'), get_the_title($lyric_id)),
-            'post_content'  => $notes,
-            'post_status'   => 'publish',
-            'post_author'   => $user_id,
-            'post_type'     => 'clm_practice_log',
+    // Check if user is logged in
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('You must be logged in to track practice.', 'choir-lyrics-manager')));
+    }
+    
+    // Check nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_practice_nonce')) {
+        wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
+    }
+    
+    // Check required fields
+    if (empty($_POST['lyric_id']) || empty($_POST['duration']) || empty($_POST['confidence'])) {
+        wp_send_json_error(array('message' => __('Required fields are missing.', 'choir-lyrics-manager')));
+    }
+    
+    $user_id = get_current_user_id();
+    $lyric_id = intval($_POST['lyric_id']);
+    $duration = intval($_POST['duration']);
+    $confidence = intval($_POST['confidence']);
+    $notes = isset($_POST['notes']) ? sanitize_textarea_field($_POST['notes']) : '';
+    
+    // Validate field values
+    if ($confidence < 1 || $confidence > 5) {
+        $confidence = 3; // Default to middle value if invalid
+    }
+    
+    if ($duration < 1) {
+        $duration = 1; // Minimum 1 minute
+    }
+    
+    // Create practice log entry
+    $log_data = array(
+        'post_title'    => sprintf(__('Practice: %s', 'choir-lyrics-manager'), get_the_title($lyric_id)),
+        'post_content'  => $notes,
+        'post_status'   => 'publish',
+        'post_author'   => $user_id,
+        'post_type'     => 'clm_practice_log',
+    );
+    
+    $log_id = wp_insert_post($log_data);
+    
+    if (is_wp_error($log_id)) {
+        wp_send_json_error(array('message' => $log_id->get_error_message()));
+    }
+    
+    // Set practice log meta
+    update_post_meta($log_id, '_clm_lyric_id', $lyric_id);
+    update_post_meta($log_id, '_clm_practice_date', date('Y-m-d'));
+    update_post_meta($log_id, '_clm_duration', $duration);
+    update_post_meta($log_id, '_clm_confidence', $confidence);
+    
+    // Update user total practice time
+    $this->update_user_practice_stats($user_id, $lyric_id, $duration, $confidence);
+    
+    // Check if user has a member profile and update skills
+    global $wpdb;
+    $member = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->posts} p 
+        JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+        WHERE pm.meta_key = '_clm_wp_user_id' 
+        AND pm.meta_value = %d 
+        AND p.post_type = 'clm_member'
+        LIMIT 1",
+        $user_id
+    ));
+    
+    $updated_skill = null;
+    if ($member) {
+        $updated_skill = $this->update_skill_from_practice($member->ID, $lyric_id, $duration, $confidence);
+    }
+    
+    // Get updated practice stats
+    $stats = $this->get_lyric_practice_stats($lyric_id, $user_id);
+    
+    wp_send_json_success(array(
+        'message' => __('Practice log updated successfully.', 'choir-lyrics-manager'),
+        'stats' => array(
+            'total_time' => $stats['total_time'],
+            'sessions' => $stats['sessions'],
+            'last_date' => $stats['last_practice'] ? date_i18n(get_option('date_format'), strtotime($stats['last_practice'])) : '',
+            'confidence' => $stats['confidence']
+        ),
+        'skill' => $updated_skill
+    ));
+}
+
+// Fixed version of the skill update method
+private function update_skill_from_practice($member_id, $lyric_id, $duration, $confidence) {
+    $skills = new CLM_Skills($this->plugin_name, $this->version);
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'clm_member_skills';
+    
+    // Get current skill
+    $current_skill = $skills->get_member_skill($member_id, $lyric_id);
+    
+    if ($current_skill) {
+        // Update existing skill
+        $update_data = array(
+            'practice_count' => $current_skill->practice_count + 1,
+            'total_practice_minutes' => $current_skill->total_practice_minutes + intval($duration),
+            'last_practice_date' => current_time('mysql')
         );
         
-        $log_id = wp_insert_post($log_data);
-        
-        if (is_wp_error($log_id)) {
-            wp_send_json_error(array('message' => $log_id->get_error_message()));
+        // Auto-progression logic
+        if ($current_skill->skill_level == 'novice' && $current_skill->practice_count >= 1) {
+            $update_data['skill_level'] = 'learning';
+        } elseif ($current_skill->skill_level == 'learning' && $confidence >= 4) {
+            $update_data['skill_level'] = 'proficient';
+        } elseif ($current_skill->skill_level == 'proficient' && $confidence >= 5 && $current_skill->practice_count >= 4) {
+            $update_data['skill_level'] = 'master';
         }
         
-        // Set practice log meta
-        update_post_meta($log_id, '_clm_lyric_id', $lyric_id);
-        update_post_meta($log_id, '_clm_practice_date', date('Y-m-d'));
-        update_post_meta($log_id, '_clm_duration', $duration);
-        update_post_meta($log_id, '_clm_confidence', $confidence);
+        $wpdb->update(
+            $table_name,
+            $update_data,
+            array('id' => $current_skill->id)
+        );
         
-        // Update user total practice time
-        $this->update_user_practice_stats($user_id, $lyric_id, $duration, $confidence);
-        
-        // Get updated practice stats
-        $stats = $this->get_lyric_practice_stats($lyric_id, $user_id);
-        
-        wp_send_json_success(array(
-            'message' => __('Practice log updated successfully.', 'choir-lyrics-manager'),
-            'stats' => $stats
+        // Get updated skill
+        return $skills->get_member_skill($member_id, $lyric_id);
+    } else {
+        // Create new skill entry
+        $wpdb->insert($table_name, array(
+            'member_id' => $member_id,
+            'lyric_id' => $lyric_id,
+            'skill_level' => 'novice',
+            'practice_count' => 1,
+            'total_practice_minutes' => intval($duration),
+            'last_practice_date' => current_time('mysql'),
+            'created_at' => current_time('mysql')
         ));
+        
+        return $skills->get_member_skill($member_id, $lyric_id);
     }
+}
+
 
     /**
      * Update user practice statistics
@@ -283,6 +358,111 @@ class CLM_Practice {
         
         return $history;
     }
+
+
+// Add to class-clm-practice.php
+
+public function update_member_skill_from_practice($member_id, $lyric_id, $practice_data) {
+    global $wpdb;
+    
+    $table_name = $wpdb->prefix . 'clm_member_skills';
+    
+    // Get current skill
+    $current_skill = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE member_id = %d AND lyric_id = %d",
+        $member_id,
+        $lyric_id
+    ));
+    
+    if ($current_skill) {
+        // Update existing skill
+        $update_data = array(
+            'practice_count' => $current_skill->practice_count + 1,
+            'total_practice_minutes' => $current_skill->total_practice_minutes + intval($practice_data['duration']),
+            'last_practice_date' => current_time('mysql')
+        );
+        
+        // Auto-progression logic
+        if ($practice_data['confidence'] >= 4 && $current_skill->skill_level == 'learning') {
+            $update_data['skill_level'] = 'proficient';
+        } elseif ($practice_data['confidence'] >= 5 && $current_skill->practice_count >= 5 && $current_skill->skill_level == 'proficient') {
+            $update_data['skill_level'] = 'master';
+        } elseif ($current_skill->skill_level == 'novice' && $current_skill->practice_count >= 1) {
+            $update_data['skill_level'] = 'learning';
+        }
+        
+        $wpdb->update($table_name, $update_data, array('id' => $current_skill->id));
+    } else {
+        // Create new skill entry
+        $wpdb->insert($table_name, array(
+            'member_id' => $member_id,
+            'lyric_id' => $lyric_id,
+            'skill_level' => 'learning',
+            'practice_count' => 1,
+            'total_practice_minutes' => intval($practice_data['duration']),
+            'last_practice_date' => current_time('mysql')
+        ));
+    }
+    
+    // Check for achievements
+    $this->check_achievements($member_id, $lyric_id);
+}
+
+private function check_achievements($member_id, $lyric_id) {
+    global $wpdb;
+    
+    $table_name = $wpdb->prefix . 'clm_member_skills';
+    
+    $skill = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE member_id = %d AND lyric_id = %d",
+        $member_id,
+        $lyric_id
+    ));
+    
+    if (!$skill) return;
+    
+    $badges = maybe_unserialize($skill->achievement_badges) ?: array();
+    $new_badges = array();
+    
+    // First practice badge
+    if ($skill->practice_count == 1 && !isset($badges['first_practice'])) {
+        $new_badges['first_practice'] = array(
+            'name' => __('First Steps', 'choir-lyrics-manager'),
+            'description' => __('Completed your first practice session', 'choir-lyrics-manager'),
+            'icon' => 'dashicons-flag',
+            'earned_date' => current_time('mysql')
+        );
+    }
+    
+    // Consistency badges
+    if ($skill->practice_count >= 5 && !isset($badges['consistent_5'])) {
+        $new_badges['consistent_5'] = array(
+            'name' => __('Consistent Learner', 'choir-lyrics-manager'),
+            'description' => __('Practiced 5 times', 'choir-lyrics-manager'),
+            'icon' => 'dashicons-awards',
+            'earned_date' => current_time('mysql')
+        );
+    }
+    
+    // Skill level badges
+    if ($skill->skill_level == 'master' && !isset($badges['master_level'])) {
+        $new_badges['master_level'] = array(
+            'name' => __('Master', 'choir-lyrics-manager'),
+            'description' => __('Achieved master level', 'choir-lyrics-manager'),
+            'icon' => 'dashicons-star-filled',
+            'earned_date' => current_time('mysql')
+        );
+    }
+    
+    if (!empty($new_badges)) {
+        $badges = array_merge($badges, $new_badges);
+        $wpdb->update(
+            $table_name,
+            array('achievement_badges' => serialize($badges)),
+            array('id' => $skill->id)
+        );
+    }
+}
 
     /**
      * Render practice tracking widget

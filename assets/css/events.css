@@ -1,0 +1,474 @@
+/**
+ * Events CSS for Choir Lyrics Manager
+ *
+ * @package Choir_Lyrics_Manager
+ */
+
+/* Event Archive Styles */
+.clm-events-archive {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.clm-archive-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.clm-archive-title {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.clm-event-filters {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.clm-event-filters form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.clm-filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.clm-filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.clm-filter-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Event List Styles */
+.clm-events-list {
+    display: grid;
+    gap: 30px;
+}
+
+.clm-event-item {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    gap: 20px;
+    padding: 20px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.clm-event-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.clm-event-date-box {
+    text-align: center;
+    background: #007cba;
+    color: white;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.clm-event-month {
+    font-size: 1.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.clm-event-day {
+    font-size: 2.5em;
+    font-weight: 700;
+    line-height: 1;
+    margin: 5px 0;
+}
+
+.clm-event-year {
+    font-size: 1em;
+    opacity: 0.9;
+}
+
+.clm-event-info {
+    flex: 1;
+}
+
+.clm-event-title {
+    font-size: 1.5em;
+    margin: 0 0 10px 0;
+}
+
+.clm-event-title a {
+    color: #333;
+    text-decoration: none;
+}
+
+.clm-event-title a:hover {
+    color: #007cba;
+}
+
+.clm-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.clm-event-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.clm-event-meta .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.clm-event-excerpt {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.clm-event-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.clm-event-thumbnail {
+    width: 150px;
+}
+
+.clm-event-thumbnail img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Single Event Styles */
+.clm-single-event {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.clm-event-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.clm-event-header .clm-event-title {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.clm-event-header .clm-event-meta {
+    justify-content: center;
+    font-size: 1.1em;
+}
+
+.clm-event-featured-image {
+    margin-bottom: 40px;
+}
+
+.clm-event-featured-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.clm-event-content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 40px;
+}
+
+.clm-event-main {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.clm-event-description {
+    margin-bottom: 40px;
+    line-height: 1.8;
+}
+
+.clm-event-program h2 {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.clm-setlist {
+    list-style: none;
+    padding: 0;
+    counter-reset: setlist-counter;
+}
+
+.clm-setlist-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    counter-increment: setlist-counter;
+    position: relative;
+    padding-left: 40px;
+}
+
+.clm-setlist-item::before {
+    content: counter(setlist-counter);
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 700;
+    color: #007cba;
+}
+
+.clm-setlist-title {
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+}
+
+.clm-setlist-title:hover {
+    color: #007cba;
+}
+
+.clm-setlist-meta {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+.clm-setlist-meta span {
+    margin-right: 15px;
+}
+
+/* Event Sidebar */
+.clm-event-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.clm-event-details-box,
+.clm-event-tickets-box,
+.clm-event-share {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.clm-event-details-box h3,
+.clm-event-tickets-box h3,
+.clm-event-share h3 {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.clm-event-detail {
+    margin-bottom: 10px;
+}
+
+.clm-detail-label {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.clm-ticket-price {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+
+.clm-price-value {
+    font-weight: 700;
+    color: #007cba;
+}
+
+.clm-button-block {
+    display: block;
+    text-align: center;
+    width: 100%;
+}
+
+.clm-share-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.clm-share-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.clm-share-facebook {
+    background: #1877f2;
+}
+
+.clm-share-twitter {
+    background: #1da1f2;
+}
+
+.clm-share-email {
+    background: #666;
+}
+
+.clm-share-button:hover {
+    transform: scale(1.1);
+}
+
+/* Event Navigation */
+.clm-event-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.clm-prev-event,
+.clm-next-event {
+    flex: 1;
+}
+
+.clm-next-event {
+    text-align: right;
+}
+
+.clm-event-navigation a {
+    color: #666;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.clm-event-navigation a:hover {
+    color: #007cba;
+}
+
+/* Event Widget Styles */
+.clm-events-widget {
+    list-style: none;
+    padding: 0;
+}
+
+.clm-event-widget-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.clm-event-widget-item:last-child {
+    border-bottom: none;
+}
+
+.clm-event-widget-title {
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+}
+
+.clm-event-widget-title:hover {
+    color: #007cba;
+}
+
+.clm-event-widget-date,
+.clm-event-widget-venue {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+.clm-view-all-events {
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+    .clm-event-item {
+        grid-template-columns: 100px 1fr;
+    }
+    
+    .clm-event-thumbnail {
+        grid-column: 1 / -1;
+        order: 3;
+        width: 100%;
+    }
+    
+    .clm-event-content-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .clm-event-sidebar {
+        order: -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .clm-event-item {
+        grid-template-columns: 1fr;
+    }
+    
+    .clm-event-date-box {
+        width: 100px;
+        margin: 0 auto 15px;
+    }
+    
+    .clm-event-filters form {
+        flex-direction: column;
+    }
+    
+    .clm-filter-group {
+        width: 100%;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .clm-event-filters,
+    .clm-event-actions,
+    .clm-event-share,
+    .clm-event-navigation {
+        display: none;
+    }
+    
+    .clm-event-content-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .clm-setlist-item {
+        page-break-inside: avoid;
+    }
+}

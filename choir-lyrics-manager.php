@@ -23,6 +23,10 @@ define('CLM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CLM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CLM_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
+// Add activation and deactivation hooks
+register_activation_hook(__FILE__, 'activate_choir_lyrics_manager');
+register_deactivation_hook(__FILE__, 'deactivate_choir_lyrics_manager');
+
 /**
  * The code that runs during plugin activation.
  */
@@ -39,19 +43,23 @@ function deactivate_choir_lyrics_manager() {
     CLM_Deactivator::deactivate();
 }
 
-register_activation_hook(__FILE__, 'activate_choir_lyrics_manager');
-register_deactivation_hook(__FILE__, 'deactivate_choir_lyrics_manager');
-
-/**
- * The core plugin class that is used to define internationalization,
- * admin-specific hooks, and public-facing site hooks.
- */
-require_once CLM_PLUGIN_DIR . 'includes/class-choir-lyrics-manager.php';
-
 /**
  * Begins execution of the plugin.
  */
 function run_choir_lyrics_manager() {
+    // Ensure necessary template directories exist
+    if (!file_exists(CLM_PLUGIN_DIR . 'templates')) {
+        wp_mkdir_p(CLM_PLUGIN_DIR . 'templates');
+    }
+    
+    if (!file_exists(CLM_PLUGIN_DIR . 'templates/partials')) {
+        wp_mkdir_p(CLM_PLUGIN_DIR . 'templates/partials');
+    }
+    
+    // Load the core plugin class
+    require_once CLM_PLUGIN_DIR . 'includes/class-choir-lyrics-manager.php';
+    
+    // Initialize the plugin
     $plugin = new Choir_Lyrics_Manager();
     $plugin->run();
 }

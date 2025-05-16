@@ -1,0 +1,251 @@
+/**
+ * Admin CSS for Skills Management in Choir Lyrics Manager
+ *
+ * @package    Choir_Lyrics_Manager
+ */
+
+/* Skills Management Page */
+.clm-skills-page {
+    margin: 20px 0;
+}
+
+.clm-skills-header {
+    margin-bottom: 20px;
+}
+
+.clm-skills-filters {
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.clm-filter-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.clm-filter-group label {
+    margin-right: 10px;
+    font-weight: 600;
+}
+
+/* Skills Table */
+.clm-skills-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.clm-skills-table th,
+.clm-skills-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.clm-skills-table th {
+    font-weight: 600;
+    color: #23282d;
+    background: #f9f9f9;
+}
+
+.clm-skills-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.clm-skill-level {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.clm-skill-level .dashicons {
+    font-size: 18px;
+}
+
+/* Skill level colors */
+.clm-skill-level[data-level="novice"] .dashicons {
+    color: #dc3545;
+}
+
+.clm-skill-level[data-level="learning"] .dashicons {
+    color: #ffc107;
+}
+
+.clm-skill-level[data-level="proficient"] .dashicons {
+    color: #17a2b8;
+}
+
+.clm-skill-level[data-level="master"] .dashicons {
+    color: #28a745;
+}
+
+/* Action Buttons */
+.clm-skills-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.clm-action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    text-decoration: none;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.clm-action-button.edit {
+    background-color: #2271b1;
+}
+
+.clm-action-button.edit:hover {
+    background-color: #135e96;
+}
+
+.clm-action-button.practice {
+    background-color: #28a745;
+}
+
+.clm-action-button.practice:hover {
+    background-color: #218838;
+}
+
+/* Member Skills Dashboard */
+.clm-member-skills-dashboard {
+    margin: 20px 0;
+}
+
+.clm-skill-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.clm-stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    border-left: 4px solid;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    text-align: center;
+}
+
+.clm-stat-card .dashicons {
+    font-size: 30px;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 10px;
+}
+
+.clm-stat-number {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.clm-stat-label {
+    color: #777;
+}
+
+/* Skill Badge */
+.clm-skill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.clm-skill-badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Skill Edit Form */
+.clm-skill-edit-form {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+    margin-bottom: 20px;
+}
+
+.clm-skill-edit-form h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.clm-form-field {
+    margin-bottom: 15px;
+}
+
+.clm-form-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.clm-form-field select,
+.clm-form-field textarea {
+    width: 100%;
+    max-width: 600px;
+}
+
+.clm-form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .clm-skills-filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .clm-filter-group {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .clm-filter-group label {
+        min-width: 100px;
+    }
+    
+    .clm-filter-group select {
+        width: 100%;
+    }
+    
+    .clm-skills-table th:nth-child(4),
+    .clm-skills-table td:nth-child(4) {
+        display: none;
+    }
+    
+    .clm-skills-actions {
+        flex-direction: column;
+    }
+    
+    .clm-action-button {
+        width: 100%;
+        justify-content: center;
+    }
+}

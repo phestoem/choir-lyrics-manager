@@ -375,8 +375,89 @@ function extract_video_url($embed_code) {
             endif;
         endif;
         ?>
+				
+		
+		<?php 
+		// Add this right after the practice tracking widget, only once
+		if (is_user_logged_in()):
+			// Get current user's member info
+			global $wpdb;
+			$user_id = get_current_user_id();
+			
+			// Check if user has a member profile linked
+			$member = $wpdb->get_row($wpdb->prepare(
+				"SELECT * FROM {$wpdb->posts} p 
+				JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+				WHERE pm.meta_key = '_clm_wp_user_id' 
+				AND pm.meta_value = %d 
+				AND p.post_type = 'clm_member'
+				LIMIT 1",
+				$user_id
+			));
+			
+			if ($member):
+				$skills = new CLM_Skills('choir-lyrics-manager', CLM_VERSION);
+				$skill = $skills->get_member_skill($member->ID, $lyric->ID);
+				
+				if ($skill):
+					$skill_levels = $skills->get_skill_levels();
+					$level_info = $skill_levels[$skill->skill_level];
+					?>
+					<div class="clm-skill-status-widget">
+						<h3><?php _e('Your Skill Level', 'choir-lyrics-manager'); ?></h3>
+						<div class="clm-current-skill">
+							<span class="clm-skill-badge" style="background-color: <?php echo $level_info['color']; ?>">
+								<span class="dashicons <?php echo $level_info['icon']; ?>"></span>
+								<?php echo $level_info['label']; ?>
+							</span>
+							<div class="clm-skill-stats">
+								<div class="clm-skill-stat">
+									<strong><?php _e('Practice Sessions:', 'choir-lyrics-manager'); ?></strong>
+									<span><?php echo $skill->practice_count; ?></span>
+								</div>
+								<div class="clm-skill-stat">
+									<strong><?php _e('Total Time:', 'choir-lyrics-manager'); ?></strong>
+									<span><?php echo $skills->format_minutes($skill->total_practice_minutes); ?></span>
+								</div>
+								<?php if ($skill->goal_date): ?>
+								<div class="clm-skill-stat">
+									<strong><?php _e('Goal:', 'choir-lyrics-manager'); ?></strong>
+									<span><?php echo date_i18n(get_option('date_format'), strtotime($skill->goal_date)); ?></span>
+								</div>
+								<?php endif; ?>
+							</div>
+							<div class="clm-skill-progress">
+								<div class="clm-progress-bar">
+									<div class="clm-progress-fill" style="width: <?php echo ($level_info['value'] / 4) * 100; ?>%; background-color: <?php echo $level_info['color']; ?>"></div>
+								</div>
+								<p class="clm-skill-description"><?php echo $level_info['description']; ?></p>
+							</div>
+						</div>
+					</div>
+					<?php 
+				else: 
+					?>
+					<div class="clm-skill-status-widget">
+						<h3><?php _e('Skill Progress', 'choir-lyrics-manager'); ?></h3>
+						<p class="clm-no-skill"><?php _e('Start practicing to track your skill level for this song!', 'choir-lyrics-manager'); ?></p>
+					</div>
+					<?php
+				endif;
+			else:
+				?>
+				<div class="clm-skill-status-widget">
+					<h3><?php _e('Member Profile Required', 'choir-lyrics-manager'); ?></h3>
+					<p class="clm-notice"><?php _e('A member profile needs to be created for you to track skills. Please contact your choir administrator.', 'choir-lyrics-manager'); ?></p>
+				</div>
+				<?php
+			endif;
+		endif;
+		?>
+	
     </article>
 </div>
+
+
 
 <style>
 /* Enhanced styles for single lyric page */

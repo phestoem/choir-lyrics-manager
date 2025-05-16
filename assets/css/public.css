@@ -1,5 +1,6 @@
 /**
- * Public CSS for Choir Lyrics Manager
+ * Fixed Public CSS for Choir Lyrics Manager
+ * Handles logged-in and non-logged-in user states
  * @package Choir_Lyrics_Manager
  */
 
@@ -326,6 +327,17 @@
     flex-wrap: wrap;
 }
 
+/* Hide playlist button for non-logged-in users */
+body:not(.logged-in) .clm-create-playlist-button,
+body:not(.logged-in) .clm-create-playlist-form {
+    display: none !important;
+}
+
+/* Adjust layout for logged-out users */
+body:not(.logged-in) .clm-item-actions {
+    justify-content: flex-start;
+}
+
 /* Buttons */
 .clm-button {
     display: inline-block;
@@ -355,7 +367,7 @@
 }
 
 .clm-button-small {
-    padding: 4px 12px;
+    padding: 6px 12px;
     font-size: 13px;
 }
 
@@ -437,8 +449,7 @@
     background: #218838;
 }
 
-/* Pagination */
-#clm-pagination,
+/* Fixed Pagination Styles */
 .clm-pagination {
     margin: 40px 0;
     text-align: center;
@@ -568,6 +579,251 @@
     }
 }
 
+/* Modal styles */
+.clm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clm-modal {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+}
+
+.clm-modal h3 {
+    margin: 0 0 15px;
+    font-size: 1.3em;
+}
+
+.clm-modal p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.clm-goal-date-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.clm-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Notification styles */
+.clm-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    z-index: 10001;
+    display: none;
+}
+
+.clm-notification-success {
+    background: #28a745;
+}
+
+.clm-notification-error {
+    background: #dc3545;
+}
+
+.clm-notification-info {
+    background: #17a2b8;
+}
+
+.clm-notification-warning {
+    background: #ffc107;
+    color: #856404;
+}
+
+/* Skill Status Widget */
+.clm-skill-status-widget {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.clm-skill-status-widget h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.clm-current-skill {
+    text-align: center;
+}
+
+.clm-skill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.clm-skill-badge .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.clm-skill-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.clm-skill-stats p {
+    margin: 0;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.clm-skill-progress {
+    margin-top: 20px;
+}
+
+.clm-progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+/* Combine progress fill definitions and add vendor prefixes */
+.clm-progress-fill {
+    height: 100%;
+    -webkit-transition: width 1s ease-out;
+    transition: width 1s ease-out;
+}
+/* Add vendor prefixes to animations */
+@-webkit-keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+@keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+.clm-loading-spinner {
+    /* ... existing properties ... */
+    -webkit-animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite;
+}
+.clm-skill-description {
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Logged-out specific styles */
+body:not(.logged-in) .clm-item-actions {
+    display: block;
+}
+
+body:not(.logged-in) .clm-skill-status-widget,
+body:not(.logged-in) .clm-practice-tracker {
+    display: none;
+}
+
+/* Fix for WordPress admin bar */
+.admin-bar .clm-modal-overlay,
+.admin-bar #clm-loading-overlay {
+    top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+    .admin-bar .clm-modal-overlay,
+    .admin-bar #clm-loading-overlay {
+        top: 46px;
+    }
+}
+
+/* Animation fix for loading states */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Alert boxes */
+.clm-alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.clm-alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+
+.clm-alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}
+
+.clm-alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.clm-alert-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+/* Fix star ratings */
+.clm-meta-difficulty .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #ff9800;
+}
+
+.clm-meta-difficulty .dashicons-star-empty {
+    color: #ddd;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .clm-container {
@@ -654,14 +910,87 @@
     box-shadow: none;
 }
 
-/* Fix star ratings */
-.clm-meta-difficulty .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: #ff9800;
+/* Tooltip styles */
+.clm-tooltip {
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 10000;
+    pointer-events: none;
 }
 
-.clm-meta-difficulty .dashicons-star-empty {
-    color: #ddd;
+/* Ensure shortcode pagination is visible */
+.clm-shortcode-pagination {
+    margin-top: 20px;
+    display: block !important; /* Force display */
+}
+
+.clm-shortcode-pagination .clm-pagination,
+.clm-shortcode-pagination .page-numbers {
+    display: block;
+    margin: 20px 0;
+}
+
+/* Style page numbers */
+.clm-shortcode-pagination .page-numbers {
+    text-align: center;
+}
+
+.clm-shortcode-pagination .page-numbers li {
+    display: inline-block;
+    margin: 0 2px;
+}
+
+.clm-shortcode-pagination .page-numbers a,
+.clm-shortcode-pagination .page-numbers span {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
+.clm-shortcode-pagination .page-numbers .current {
+    background-color: #007cba;
+    color: white;
+    border-color: #007cba;
+}
+.clm-results-info-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.clm-results-info {
+    font-size: 16px;
+    color: #666;
+}
+
+.clm-results-count {
+    font-weight: 600;
+    color: #333;
+}
+
+.clm-view-options {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .clm-results-info-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .clm-view-options {
+        width: 100%;
+        justify-content: space-between;
+    }
 }

@@ -78,11 +78,13 @@ public function enqueue_scripts() {
 	error_log('Creating filter nonce with action "clm_filter_nonce": ' . $filter_nonce);
     error_log('CLM Nonce Generated: ' . $filter_nonce);
 	
-	$all_nonces = array(
+	 $all_nonces = array(
         'practice' => wp_create_nonce('clm_practice_nonce'),
         'playlist' => wp_create_nonce('clm_playlist_nonce'),
         'search' => wp_create_nonce('clm_search_nonce'),
-        'filter' => $filter_nonce,
+        'filter' => wp_create_nonce('clm_filter_nonce'),
+        'skills' => wp_create_nonce('clm_skills_nonce'), // Add skills nonce
+		'shortcode_filter' => wp_create_nonce('clm_shortcode_filter'), // Add this line
     );
 	error_log('All nonces: ' . print_r($all_nonces, true));
 	
@@ -98,7 +100,16 @@ public function enqueue_scripts() {
             'search_min_length' => __('Please enter at least 2 characters', 'choir-lyrics-manager'),
             'searching' => __('Searching...', 'choir-lyrics-manager'),
             'loading' => __('Loading...', 'choir-lyrics-manager'),
-            'error' => __('An error occurred. Please try again.', 'choir-lyrics-manager'),
+            'error' => __('An error occurred. Please try again.', 'choir-lyrics-manager'),			
+			 // Add skill management texts
+            'set_goal_title' => __('Set Practice Goal', 'choir-lyrics-manager'),
+            'set_goal_description' => __('Choose a target date for mastering this piece:', 'choir-lyrics-manager'),
+            'confirm' => __('Set Goal', 'choir-lyrics-manager'),
+            'cancel' => __('Cancel', 'choir-lyrics-manager'),
+            'saving' => __('Saving...', 'choir-lyrics-manager'),
+            'goal_set_success' => __('Goal set successfully!', 'choir-lyrics-manager'),
+            'please_select_date' => __('Please select a date', 'choir-lyrics-manager'),
+            'goal' => __('Goal', 'choir-lyrics-manager'),
         ),
     ));
 }
@@ -152,8 +163,19 @@ public function enqueue_scripts() {
         
         // Search form shortcode
         add_shortcode('clm_search_form', array($this, 'search_form_shortcode'));
+		
+		 // Add skills dashboard shortcode
+		add_shortcode('clm_skills_dashboard', array($this, 'skills_dashboard_shortcode'));
     }
-
+	public function skills_dashboard_shortcode($atts) {
+		if (!is_user_logged_in()) {
+			return '<p class="clm-notice">' . __('Please log in to view your skills dashboard.', 'choir-lyrics-manager') . '</p>';
+		}
+		
+		ob_start();
+		include CLM_PLUGIN_DIR . 'templates/member-skills-dashboard.php';
+		return ob_get_clean();
+	}
     /**
      * Lyric shortcode
      *

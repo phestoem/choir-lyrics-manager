@@ -103,6 +103,15 @@ class CLM_Admin {
             26
         );
         
+		add_submenu_page(
+			'choir-lyrics-manager',
+			__('My Skills', 'choir-lyrics-manager'),
+			__('My Skills', 'choir-lyrics-manager'),
+			'read', // Any logged-in user can view their own skills
+			'clm-my-skills',
+			array($this, 'display_my_skills_page')
+		);
+		
         // Dashboard submenu
         add_submenu_page(
             'choir-lyrics-manager',
@@ -168,7 +177,14 @@ class CLM_Admin {
             'clm-settings',
             array($this, 'display_settings_page')
         );
-        
+		//Events menu
+		add_submenu_page(
+			'choir-lyrics-manager',
+			__('Events', 'choir-lyrics-manager'),
+			__('Events', 'choir-lyrics-manager'),
+			'edit_posts',
+			'edit.php?post_type=clm_event'
+		);
         // Add custom JS/CSS for specific admin pages
         add_action('load-' . $settings_page, array($this, 'load_settings_page'));
         add_action('load-' . $analytics_page, array($this, 'load_analytics_page'));
@@ -254,6 +270,16 @@ class CLM_Admin {
         include CLM_PLUGIN_DIR . 'admin/partials/dashboard.php';
     }
     
+	// Add the display method
+		public function display_my_skills_page() {
+			if (!is_user_logged_in()) {
+				wp_die(__('You must be logged in to view this page.', 'choir-lyrics-manager'));
+			}
+			
+            include CLM_PLUGIN_DIR . 'templates/member-dashboard/member-skills-dashboard.php';
+		}
+	
+	
     /**
      * Display the analytics page.
      *
@@ -264,6 +290,17 @@ class CLM_Admin {
         echo $analytics->render_analytics_dashboard();
     }
     
+	// Enqueue admin scripts for events
+	public function enqueue_events_admin_scripts($hook) {
+		global $post_type;
+		
+		if ('clm_event' === $post_type) {
+			wp_enqueue_script('jquery-ui-sortable');
+			wp_enqueue_script('jquery-ui-datepicker');
+			wp_enqueue_style('jquery-ui', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
+		}
+	}
+	
     /**
      * Display the settings page.
      *
