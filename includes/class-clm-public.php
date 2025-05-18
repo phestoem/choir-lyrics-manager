@@ -267,9 +267,12 @@ public function enqueue_scripts() {
      * @param     array     $atts    Shortcode attributes.
      * @return    string             Shortcode output.
      */
-   public function lyrics_list_shortcode($atts) {
+  /**
+ * Lyrics list shortcode (continued)
+ */
+public function lyrics_list_shortcode($atts) {
     $atts = shortcode_atts(array(
-        'number' => 10,
+        'number' => 20,
         'genre' => '',
         'composer' => '',
         'language' => '',
@@ -287,6 +290,26 @@ public function enqueue_scripts() {
     
     // Get current page
     $paged = get_query_var('paged') ? get_query_var('paged') : 1;
+    
+    // Apply defaults for display attributes
+    $show_details = $atts['show_details'] === 'yes';
+    $show_search = $atts['show_search'] === 'yes';
+    $show_filters = $atts['show_filters'] === 'yes';
+    $show_alphabet = $atts['show_alphabet'] === 'yes';
+    $show_pagination = $atts['show_pagination'] === 'yes';
+    $ajax_enabled = $atts['ajax_enabled'] === 'yes';
+    
+    // Validate order parameters
+    $valid_orderby = array('title', 'date', 'modified', 'menu_order', 'rand');
+    $valid_order = array('ASC', 'DESC');
+    
+    if (!in_array($atts['orderby'], $valid_orderby)) {
+        $atts['orderby'] = 'title';
+    }
+    
+    if (!in_array($atts['order'], $valid_order)) {
+        $atts['order'] = 'ASC';
+    }
     
     // Build query arguments
     $args = array(
@@ -368,23 +391,33 @@ public function enqueue_scripts() {
     }
     
     // Apply ordering from GET parameters
-    if (isset($_GET['orderby'])) {
+    if (isset($_GET['orderby']) && in_array($_GET['orderby'], $valid_orderby)) {
         $args['orderby'] = sanitize_text_field($_GET['orderby']);
     }
     
-    if (isset($_GET['order'])) {
+    if (isset($_GET['order']) && in_array($_GET['order'], $valid_order)) {
         $args['order'] = sanitize_text_field($_GET['order']);
     }
     
     // Execute query
     $query = new WP_Query($args);
     
+    // Debug query info if needed
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('CLM Shortcode Query: ' . print_r($args, true));
+        error_log('CLM Shortcode SQL: ' . $query->request);
+    }
+    
     ob_start();
     ?>
     
-    <div id="<?php echo esc_attr($atts['container_id']); ?>" class="clm-shortcode-container" data-ajax="<?php echo esc_attr($atts['ajax_enabled']); ?>">
+    <div id="<?php echo esc_attr($atts['container_id']); ?>" class="clm-shortcode-container" 
+         data-ajax="<?php echo esc_attr($ajax_enabled ? 'yes' : 'no'); ?>"
+         data-per-page="<?php echo esc_attr($args['posts_per_page']); ?>"
+         data-orderby="<?php echo esc_attr($args['orderby']); ?>"
+         data-order="<?php echo esc_attr($args['order']); ?>">
         
-        <?php if ($atts['show_search'] === 'yes'): ?>
+        <?php if ($show_search): ?>
         <!-- Enhanced Search Section -->
         <div class="clm-search-section">
             <div class="clm-search-wrapper">
@@ -408,6 +441,7 @@ public function enqueue_scripts() {
             </div>
             
             <!-- Quick filters -->
+            <?php if ($show_alphabet): ?>
             <div class="clm-quick-filters">
                 <button class="clm-quick-filter active" data-filter="all"><?php _e('All', 'choir-lyrics-manager'); ?></button>
                 <?php
@@ -424,11 +458,12 @@ public function enqueue_scripts() {
                 }
                 ?>
             </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
         
         <!-- Results info and controls -->
-        <div class="clm-results-controls">
+        <div class="clm-results-info-controls">
             <div class="clm-results-info">
                 <span class="clm-results-count"><?php echo absint($query->found_posts); ?></span> 
                 <?php _e('lyrics found', 'choir-lyrics-manager'); ?>
@@ -436,13 +471,13 @@ public function enqueue_scripts() {
             
             <div class="clm-view-options">
                 <select class="clm-items-per-page">
-                    <option value="10" <?php selected($atts['number'], 10); ?>>10 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
-                    <option value="20" <?php selected($atts['number'], 20); ?>>20 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
-                    <option value="50" <?php selected($atts['number'], 50); ?>>50 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
-                    <option value="100" <?php selected($atts['number'], 100); ?>>100 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
+                    <option value="10" <?php selected($args['posts_per_page'], 10); ?>>10 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
+                    <option value="20" <?php selected($args['posts_per_page'], 20); ?>>20 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
+                    <option value="50" <?php selected($args['posts_per_page'], 50); ?>>50 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
+                    <option value="100" <?php selected($args['posts_per_page'], 100); ?>>100 <?php _e('per page', 'choir-lyrics-manager'); ?></option>
                 </select>
                 
-                <?php if ($atts['show_filters'] === 'yes'): ?>
+                <?php if ($show_filters): ?>
                 <button class="clm-toggle-filters">
                     <span class="dashicons dashicons-filter"></span>
                     <?php _e('Advanced Filters', 'choir-lyrics-manager'); ?>
@@ -451,7 +486,7 @@ public function enqueue_scripts() {
             </div>
         </div>
         
-        <?php if ($atts['show_filters'] === 'yes'): ?>
+        <?php if ($show_filters): ?>
         <!-- Enhanced Filters (Hidden by default) -->
         <div class="clm-advanced-filters" style="display: none;">
             <form class="clm-shortcode-filter-form">
@@ -515,18 +550,26 @@ public function enqueue_scripts() {
                     
                     <!-- Sort Options -->
                     <div class="clm-filter-group">
-                        <label for="clm-sort-select"><?php _e('Sort By', 'choir-lyrics-manager'); ?></label>
-                        <div class="clm-sort-options">
-                            <select name="orderby" class="clm-filter-select">
-                                <option value="title" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : $atts['orderby'], 'title'); ?>><?php _e('Title', 'choir-lyrics-manager'); ?></option>
-                                <option value="date" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : $atts['orderby'], 'date'); ?>><?php _e('Date Added', 'choir-lyrics-manager'); ?></option>
-                                <option value="modified" <?php selected(isset($_GET['orderby']) ? $_GET['orderby'] : $atts['orderby'], 'modified'); ?>><?php _e('Last Modified', 'choir-lyrics-manager'); ?></option>
-                            </select>
-                            <select name="order" class="clm-filter-select">
-                                <option value="ASC" <?php selected(isset($_GET['order']) ? $_GET['order'] : $atts['order'], 'ASC'); ?>><?php _e('Ascending', 'choir-lyrics-manager'); ?></option>
-                                <option value="DESC" <?php selected(isset($_GET['order']) ? $_GET['order'] : $atts['order'], 'DESC'); ?>><?php _e('Descending', 'choir-lyrics-manager'); ?></option>
-                            </select>
-                        </div>
+                        <fieldset>
+                            <legend><?php _e('Sort Options', 'choir-lyrics-manager'); ?></legend>
+                            <div class="clm-sort-options">
+                                <div>
+                                    <label for="clm-sort-select"><?php _e('Sort By', 'choir-lyrics-manager'); ?></label>
+                                    <select id="clm-sort-select" name="orderby" class="clm-filter-select">
+                                        <option value="title" <?php selected($args['orderby'], 'title'); ?>><?php _e('Title', 'choir-lyrics-manager'); ?></option>
+                                        <option value="date" <?php selected($args['orderby'], 'date'); ?>><?php _e('Date Added', 'choir-lyrics-manager'); ?></option>
+                                        <option value="modified" <?php selected($args['orderby'], 'modified'); ?>><?php _e('Last Modified', 'choir-lyrics-manager'); ?></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="clm-order-select"><?php _e('Order', 'choir-lyrics-manager'); ?></label>
+                                    <select id="clm-order-select" name="order" class="clm-filter-select">
+                                        <option value="ASC" <?php selected($args['order'], 'ASC'); ?>><?php _e('Ascending', 'choir-lyrics-manager'); ?></option>
+                                        <option value="DESC" <?php selected($args['order'], 'DESC'); ?>><?php _e('Descending', 'choir-lyrics-manager'); ?></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
                     </div>
                 </div>
                 
@@ -538,7 +581,7 @@ public function enqueue_scripts() {
         </div>
         <?php endif; ?>
         
-        <?php if ($atts['show_alphabet'] === 'yes'): ?>
+        <?php if ($show_alphabet): ?>
         <!-- Alphabet Navigation -->
         <div class="clm-alphabet-nav">
             <a href="#" class="clm-alpha-link active" data-letter="all"><?php _e('All', 'choir-lyrics-manager'); ?></a>
@@ -564,7 +607,7 @@ public function enqueue_scripts() {
                                     <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
                                 </h2>
                                 
-                                <?php if ($atts['show_details'] === 'yes'): ?>
+                                <?php if ($show_details): ?>
                                 <div class="clm-item-meta">
                                     <?php
                                     $meta_items = array();
@@ -582,7 +625,8 @@ public function enqueue_scripts() {
                                     }
                                     
                                     // Show difficulty if available and enabled
-                                    if ($this->settings->get_setting('show_difficulty', true)) {
+                                    $settings = new CLM_Settings($this->plugin_name, $this->version);
+                                    if ($settings->get_setting('show_difficulty', true)) {
                                         $difficulty = get_post_meta(get_the_ID(), '_clm_difficulty', true);
                                         if ($difficulty) {
                                             $stars = '';
@@ -612,7 +656,7 @@ public function enqueue_scripts() {
                                     <?php if (is_user_logged_in()): ?>
                                         <?php
                                         // Show add to playlist button
-                                        $playlists = new CLM_Playlists('choir-lyrics-manager', CLM_VERSION);
+                                        $playlists = new CLM_Playlists($this->plugin_name, $this->version);
                                         echo $playlists->render_playlist_dropdown(get_the_ID());
                                         ?>
                                     <?php endif; ?>
@@ -622,20 +666,34 @@ public function enqueue_scripts() {
                     <?php endwhile; ?>
                 </ul>
                 
-                <?php if ($atts['show_pagination'] === 'yes' && $query->max_num_pages > 1): ?>
-                <!-- Enhanced Pagination -->
-                <div class="clm-pagination">
+                <?php if ($show_pagination && $query->max_num_pages > 1): ?>
+                <!-- Pagination -->
+                <div class="clm-shortcode-pagination" data-container="shortcode">
                     <?php
                     echo paginate_links(array(
-                        'base' => str_replace(999999999, '%#%', esc_url(get_pagenum_link(999999999))),
+                        'base' => $ajax_enabled ? '#' : str_replace(999999999, '%#%', esc_url(get_pagenum_link(999999999))),
                         'format' => '?paged=%#%',
                         'current' => $paged,
                         'total' => $query->max_num_pages,
                         'prev_text' => '<span class="dashicons dashicons-arrow-left-alt2"></span> ' . __('Previous', 'choir-lyrics-manager'),
                         'next_text' => __('Next', 'choir-lyrics-manager') . ' <span class="dashicons dashicons-arrow-right-alt2"></span>',
                         'type' => 'list',
+                        'before_page_number' => '<span data-page="',  // Add data attribute
+                        'after_page_number' => '">',                  // Close span tag
+                        'end_size' => 1,
+                        'mid_size' => 2,
                     ));
                     ?>
+                    
+                    <div class="clm-page-jump">
+                        <label><?php _e('Jump to page:', 'choir-lyrics-manager'); ?></label>
+                        <input type="number" 
+                               class="clm-page-jump-input"
+                               min="1" 
+                               max="<?php echo $query->max_num_pages; ?>" 
+                               value="<?php echo $paged; ?>">
+                        <button class="clm-page-jump-button clm-button-small"><?php _e('Go', 'choir-lyrics-manager'); ?></button>
+                    </div>
                 </div>
                 <?php endif; ?>
             <?php else: ?>
@@ -649,23 +707,23 @@ public function enqueue_scripts() {
     </div>
     
     <script>
-	// Use a more robust approach to wait for the function
-	(function() {
-		var checkInterval = setInterval(function() {
-			if (typeof jQuery !== 'undefined' && typeof window.initShortcodeFeatures === 'function') {
-				clearInterval(checkInterval);
-				jQuery(document).ready(function($) {
-					window.initShortcodeFeatures('<?php echo esc_js($atts['container_id']); ?>');
-				});
-			}
-		}, 50);
-		
-		// Stop checking after 5 seconds
-		setTimeout(function() {
-			clearInterval(checkInterval);
-		}, 5000);
-	})();
-	</script>
+    // Initialize the shortcode features when document is ready
+    (function() {
+        var checkInterval = setInterval(function() {
+            if (typeof jQuery !== 'undefined' && typeof window.initShortcodeFeatures === 'function') {
+                clearInterval(checkInterval);
+                jQuery(document).ready(function($) {
+                    window.initShortcodeFeatures('<?php echo esc_js($atts['container_id']); ?>');
+                });
+            }
+        }, 50);
+        
+        // Stop checking after 5 seconds
+        setTimeout(function() {
+            clearInterval(checkInterval);
+        }, 5000);
+    })();
+    </script>
     
     <?php
     return ob_get_clean();

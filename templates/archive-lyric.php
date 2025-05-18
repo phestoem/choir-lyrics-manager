@@ -1,6 +1,6 @@
 <?php
 /**
- * Enhanced template for displaying lyric archives - Fixed for items per page AND order preservation
+ * Enhanced template for displaying lyric archives - Fixed for items per page, order preservation, and consistent pagination
  *
  * @package    Choir_Lyrics_Manager
  */
@@ -14,48 +14,64 @@ if (!defined('ABSPATH')) {
 $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
 $archive_title = $settings->get_setting('archive_title', __('Choir Lyrics', 'choir-lyrics-manager'));
 
-// Items per page handling
-$items_per_page = null;
-if (isset($_GET['per_page'])) {
-    $items_per_page = intval($_GET['per_page']);
-} elseif (isset($_GET['clm_items_per_page'])) {
-    $items_per_page = intval($_GET['clm_items_per_page']);
+// Items per page handling - sanitize inputs with consistent parameter name
+$items_per_page = 20; // Default value
+if (isset($_GET['per_page']) && is_numeric($_GET['per_page'])) {
+    $items_per_page = absint($_GET['per_page']);
+} elseif (isset($_GET['clm_items_per_page']) && is_numeric($_GET['clm_items_per_page'])) {
+    $items_per_page = absint($_GET['clm_items_per_page']);
+} else {
+    $items_per_page = absint($settings->get_setting('items_per_page', 20));
 }
 
-// If no value found in request, fall back to settings or default
-if (empty($items_per_page)) {
-    $items_per_page = $settings->get_setting('items_per_page', 20);
-}
+// Validate items per page is within acceptable range
+$items_per_page = in_array($items_per_page, array(10, 20, 50, 100)) ? $items_per_page : 20;
 
-// Get sorting parameters
-$orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'title';
-$order = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'ASC';
+// Get and sanitize sorting parameters
+$valid_orderby = array('title', 'date', 'modified');
+$valid_order = array('ASC', 'DESC');
 
-// Store in globals for the filter
-global $clm_query_vars;
-$clm_query_vars = array(
-    'posts_per_page' => $items_per_page,
-    'orderby' => $orderby,
-    'order' => $order
-);
-
-// Add a pre_get_posts filter to modify the query before it executes
-function clm_modify_lyrics_query($query) {
-    global $clm_query_vars;
+$orderby = isset($_GET['orderby']) && in_array($_GET['orderby'], $valid_orderby) 
+    ? sanitize_text_field($_GET['orderby']) 
+    : 'title';
     
-    // Only modify main query for our specific post type archive
-    if ($query->is_main_query() && $query->is_post_type_archive('clm_lyric')) {
-        // Apply all our custom query vars
-        foreach ($clm_query_vars as $key => $value) {
-            $query->set($key, $value);
-        }
+$order = isset($_GET['order']) && in_array(strtoupper($_GET['order']), $valid_order) 
+    ? strtoupper(sanitize_text_field($_GET['order'])) 
+    : 'ASC';
+
+// Store in globals for the filter - only do this if not already done
+global $clm_query_vars;
+if (!isset($clm_query_vars)) {
+    $clm_query_vars = array(
+        'posts_per_page' => $items_per_page,
+        'orderby' => $orderby,
+        'order' => $order
+    );
+    
+    // Add a pre_get_posts filter to modify the query before it executes - only add once
+    function clm_modify_lyrics_query($query) {
+        global $clm_query_vars;
         
-        // For debugging
-        error_log('CLM: Modified query with: ' . print_r($clm_query_vars, true));
+        // Only modify main query for our specific post type archive
+        if ($query->is_main_query() && $query->is_post_type_archive('clm_lyric')) {
+            // Apply all our custom query vars
+            foreach ($clm_query_vars as $key => $value) {
+                $query->set($key, $value);
+            }
+            
+            // For debugging - only log in debug mode and limit to once per page load
+            if (WP_DEBUG && !defined('CLM_QUERY_LOGGED')) {
+                define('CLM_QUERY_LOGGED', true);
+                error_log('CLM: Modified query with: ' . print_r($clm_query_vars, true));
+            }
+        }
+        return $query;
     }
-    return $query;
+    add_action('pre_get_posts', 'clm_modify_lyrics_query');
 }
-add_action('pre_get_posts', 'clm_modify_lyrics_query');
+
+// Get current page number
+$current_page = get_query_var('paged') ? absint(get_query_var('paged')) : 1;
 
 get_header();
 ?>
@@ -69,16 +85,17 @@ get_header();
     <div class="clm-search-section">
         <div class="clm-search-wrapper">
             <form id="clm-ajax-search-form" class="clm-ajax-search-form">
+                <?php wp_nonce_field('clm_search_nonce', 'clm_search_nonce'); ?>
                 <div class="clm-search-input-wrapper">
                     <label class="screen-reader-text">
                         <?php _e('Search lyrics', 'choir-lyrics-manager'); ?>
-                        <input type="text" 
-                               id="clm-search-input"
-                               name="clm_search_query" 
-                               class="clm-search-input" 
-                               placeholder="<?php _e('Search lyrics, composers, languages...', 'choir-lyrics-manager'); ?>"
-                               autocomplete="off">
                     </label>
+                    <input type="text" 
+                           id="clm-search-input"
+                           name="clm_search_query" 
+                           class="clm-search-input" 
+                           placeholder="<?php _e('Search lyrics, composers, languages...', 'choir-lyrics-manager'); ?>"
+                           autocomplete="off">
                     <button type="submit" class="clm-search-button" aria-label="<?php _e('Search', 'choir-lyrics-manager'); ?>">
                         <span class="dashicons dashicons-search"></span>
                     </button>
@@ -102,8 +119,10 @@ get_header();
                 'hide_empty' => true,
             ));
             
-            foreach ($popular_genres as $genre) {
-                echo '<button class="clm-quick-filter" data-filter="genre" data-value="' . esc_attr($genre->slug) . '">' . esc_html($genre->name) . '</button>';
+            if (!is_wp_error($popular_genres) && !empty($popular_genres)) {
+                foreach ($popular_genres as $genre) {
+                    echo '<button class="clm-quick-filter" data-filter="genre" data-value="' . esc_attr($genre->slug) . '">' . esc_html($genre->name) . '</button>';
+                }
             }
             ?>
         </div>
@@ -112,16 +131,17 @@ get_header();
     <!-- Results info and controls -->
     <div class="clm-results-info-controls">
         <div class="clm-results-info">
-            <span class="clm-results-count"><?php echo $wp_query->found_posts; ?></span> 
+            <span class="clm-results-count"><?php echo esc_html($wp_query->found_posts); ?></span> 
             <?php _e('lyrics found', 'choir-lyrics-manager'); ?>
         </div>
         
         <div class="clm-view-options">
             <form id="clm-items-per-page-form" method="get" action="">
                 <?php 
-                // FIXED: Preserve ALL existing GET parameters - especially orderby and order
+                // Only preserve safe GET parameters
+                $safe_params = array('orderby', 'order', 'genre', 'language', 'difficulty', 'post_type');
                 foreach ($_GET as $key => $value) {
-                    if ($key !== 'per_page' && $key !== 'paged') {
+                    if (in_array($key, $safe_params) && $key !== 'per_page' && $key !== 'paged') {
                         echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
                     }
                 }
@@ -132,6 +152,11 @@ get_header();
                 }
                 if (!isset($_GET['order']) && $order != 'ASC') {
                     echo '<input type="hidden" name="order" value="' . esc_attr($order) . '">';
+                }
+                
+                // Ensure post_type is preserved
+                if (!isset($_GET['post_type'])) {
+                    echo '<input type="hidden" name="post_type" value="clm_lyric">';
                 }
                 ?>
                 <label>
@@ -155,6 +180,7 @@ get_header();
     <!-- Enhanced Filters (Hidden by default) -->
     <div class="clm-advanced-filters" style="display: none;">
         <form id="clm-filter-form" action="<?php echo esc_url(get_post_type_archive_link('clm_lyric')); ?>" method="get">
+            <?php wp_nonce_field('clm_filter_nonce', 'clm_filter_nonce'); ?>
             <input type="hidden" name="post_type" value="clm_lyric">
             <input type="hidden" name="per_page" value="<?php echo esc_attr($items_per_page); ?>">
             
@@ -167,7 +193,7 @@ get_header();
                         'hide_empty' => true,
                     ));
                     
-                    if ($genres && !is_wp_error($genres)) :
+                    if (!is_wp_error($genres) && !empty($genres)) :
                     ?>
                         <label for="clm-genre-select"><?php _e('Genre', 'choir-lyrics-manager'); ?></label>
                         <select id="clm-genre-select" name="genre" class="clm-filter-select">
@@ -192,7 +218,7 @@ get_header();
                         'hide_empty' => true,
                     ));
                     
-                    if ($languages && !is_wp_error($languages)) :
+                    if (!is_wp_error($languages) && !empty($languages)) :
                     ?>
                         <label for="clm-language-select"><?php _e('Language', 'choir-lyrics-manager'); ?></label>
                         <select id="clm-language-select" name="language" class="clm-filter-select">
@@ -217,7 +243,7 @@ get_header();
                         'hide_empty' => true,
                     ));
                     
-                    if ($difficulties && !is_wp_error($difficulties)) :
+                    if (!is_wp_error($difficulties) && !empty($difficulties)) :
                     ?>
                         <label for="clm-difficulty-select"><?php _e('Difficulty', 'choir-lyrics-manager'); ?></label>
                         <select id="clm-difficulty-select" name="difficulty" class="clm-filter-select">
@@ -267,33 +293,33 @@ get_header();
     </div>
 
     <!-- Alphabet Navigation -->
-    <div class="clm-alphabet-nav">
-        <a href="#" class="clm-alpha-link active" data-letter="all"><?php _e('All', 'choir-lyrics-manager'); ?></a>
-        <?php foreach (range('A', 'Z') as $letter): ?>
-            <a href="#" class="clm-alpha-link" data-letter="<?php echo $letter; ?>"><?php echo $letter; ?></a>
-        <?php endforeach; ?>
-    </div>
+	<div class="clm-alphabet-nav">
+		<a href="#" class="clm-alpha-link active" data-letter="all"><?php _e('All', 'choir-lyrics-manager'); ?></a>
+		<?php foreach (range('A', 'Z') as $letter): ?>
+			<a href="#" class="clm-alpha-link" data-letter="<?php echo esc_attr($letter); ?>"><?php echo esc_html($letter); ?></a>
+		<?php endforeach; ?>
+	</div>
 
     <!-- Loading indicator -->
     <div id="clm-loading-overlay" class="clm-loading-overlay" style="display: none;">
         <div class="clm-loading-spinner"></div>
     </div>
 
-    <!-- Debug info (if needed) -->
     <?php if (WP_DEBUG): ?>
     <div class="clm-debug-info" style="margin: 20px 0; padding: 10px; background: #f8f8f8; border: 1px solid #ddd;">
         <h3>Query Info</h3>
-        <p>Posts per page: <?php echo $items_per_page; ?></p>
-        <p>Order by: <?php echo $orderby; ?></p>
-        <p>Order: <?php echo $order; ?></p>
-        <p>WP Query posts_per_page: <?php echo $wp_query->get('posts_per_page'); ?></p>
-        <p>WP Query orderby: <?php echo $wp_query->get('orderby'); ?></p>
-        <p>WP Query order: <?php echo $wp_query->get('order'); ?></p>
+        <p>Posts per page: <?php echo esc_html($items_per_page); ?></p>
+        <p>Order by: <?php echo esc_html($orderby); ?></p>
+        <p>Order: <?php echo esc_html($order); ?></p>
+        <p>Current page: <?php echo esc_html($current_page); ?></p>
+        <p>WP Query posts_per_page: <?php echo esc_html($wp_query->get('posts_per_page')); ?></p>
+        <p>WP Query orderby: <?php echo esc_html($wp_query->get('orderby')); ?></p>
+        <p>WP Query order: <?php echo esc_html($wp_query->get('order')); ?></p>
     </div>
     <?php endif; ?>
 
     <!-- Results container -->
-    <div id="clm-results-container">
+    <div id="clm-results-container" data-current-page="<?php echo esc_attr($current_page); ?>">
         <?php if (have_posts()) : ?>
             <ul class="clm-items-list" id="clm-items-list">
                 <?php while (have_posts()) : the_post(); ?>
@@ -309,33 +335,49 @@ get_header();
                                 
                                 // Show composer if available
                                 $composer = get_post_meta(get_the_ID(), '_clm_composer', true);
-                                if ($composer) {
+                                if (!empty($composer)) {
                                     $meta_items[] = '<span class="clm-meta-composer"><strong>' . __('Composer:', 'choir-lyrics-manager') . '</strong> ' . esc_html($composer) . '</span>';
                                 }
                                 
                                 // Show language if available
-                                $language = get_post_meta(get_the_ID(), '_clm_language', true);
-                                if ($language) {
-                                    $meta_items[] = '<span class="clm-meta-language"><strong>' . __('Language:', 'choir-lyrics-manager') . '</strong> ' . esc_html($language) . '</span>';
+                                $language_terms = get_the_terms(get_the_ID(), 'clm_language');
+                                if (!is_wp_error($language_terms) && !empty($language_terms)) {
+                                    $language_names = array();
+                                    foreach ($language_terms as $term) {
+                                        $language_names[] = esc_html($term->name);
+                                    }
+                                    $meta_items[] = '<span class="clm-meta-language"><strong>' . __('Language:', 'choir-lyrics-manager') . '</strong> ' . implode(', ', $language_names) . '</span>';
                                 }
                                 
                                 // Show difficulty if available and enabled
                                 if ($settings->get_setting('show_difficulty', true)) {
-                                    $difficulty = get_post_meta(get_the_ID(), '_clm_difficulty', true);
-                                    if ($difficulty) {
-                                        $stars = '';
-                                        for ($i = 1; $i <= 5; $i++) {
-                                            if ($i <= $difficulty) {
-                                                $stars .= '<span class="dashicons dashicons-star-filled"></span>';
-                                            } else {
-                                                $stars .= '<span class="dashicons dashicons-star-empty"></span>';
+                                    $difficulty_terms = get_the_terms(get_the_ID(), 'clm_difficulty');
+                                    if (!is_wp_error($difficulty_terms) && !empty($difficulty_terms)) {
+                                        // Get the first difficulty term
+                                        $difficulty_term = reset($difficulty_terms);
+                                        // Check if it has a difficulty rating as term meta
+                                        $difficulty_rating = get_term_meta($difficulty_term->term_id, '_clm_difficulty_rating', true);
+                                        if (!empty($difficulty_rating) && is_numeric($difficulty_rating)) {
+                                            $difficulty_rating = absint($difficulty_rating);
+                                            if ($difficulty_rating >= 1 && $difficulty_rating <= 5) {
+                                                $stars = '';
+                                                for ($i = 1; $i <= 5; $i++) {
+                                                    if ($i <= $difficulty_rating) {
+                                                        $stars .= '<span class="dashicons dashicons-star-filled"></span>';
+                                                    } else {
+                                                        $stars .= '<span class="dashicons dashicons-star-empty"></span>';
+                                                    }
+                                                }
+                                                $meta_items[] = '<span class="clm-meta-difficulty"><strong>' . __('Difficulty:', 'choir-lyrics-manager') . '</strong> ' . $stars . '</span>';
                                             }
+                                        } else {
+                                            // Fall back to just showing the term name
+                                            $meta_items[] = '<span class="clm-meta-difficulty"><strong>' . __('Difficulty:', 'choir-lyrics-manager') . '</strong> ' . esc_html($difficulty_term->name) . '</span>';
                                         }
-                                        $meta_items[] = '<span class="clm-meta-difficulty"><strong>' . __('Difficulty:', 'choir-lyrics-manager') . '</strong> ' . $stars . '</span>';
                                     }
                                 }
                                 
-                                echo implode(' <span class="clm-meta-separator">•</span> ', $meta_items);
+                                echo !empty($meta_items) ? implode(' <span class="clm-meta-separator">•</span> ', $meta_items) : '';
                                 ?>
                             </div>
                             
@@ -347,12 +389,14 @@ get_header();
                                 <a href="<?php the_permalink(); ?>" class="clm-button"><?php _e('View Lyric', 'choir-lyrics-manager'); ?></a>
                                 
                                 <?php if (is_user_logged_in()): ?>
-                                    <button class="clm-button clm-create-playlist-button" data-lyric-id="<?php the_ID(); ?>">
+                                    <button class="clm-button clm-create-playlist-button" data-lyric-id="<?php echo esc_attr(get_the_ID()); ?>">
                                         <?php _e('Create Playlist', 'choir-lyrics-manager'); ?>
                                     </button>
                                     
-                                    <div class="clm-create-playlist-form" style="display:none;" data-lyric-id="<?php the_ID(); ?>">
+                                    <div class="clm-create-playlist-form" style="display:none;" data-lyric-id="<?php echo esc_attr(get_the_ID()); ?>">
                                         <h4><?php _e('Create New Playlist', 'choir-lyrics-manager'); ?></h4>
+                                        
+                                        <?php wp_nonce_field('clm_playlist_nonce', 'clm_playlist_nonce_' . get_the_ID()); ?>
                                         
                                         <div class="clm-form-field">
                                             <label for="clm-playlist-name-<?php the_ID(); ?>"><?php _e('Playlist Name', 'choir-lyrics-manager'); ?></label>
@@ -360,6 +404,7 @@ get_header();
                                                    id="clm-playlist-name-<?php the_ID(); ?>"
                                                    name="clm_playlist_name"
                                                    class="clm-playlist-name" 
+                                                   required
                                                    placeholder="<?php _e('Enter playlist name', 'choir-lyrics-manager'); ?>">
                                         </div>
                                         
@@ -374,16 +419,27 @@ get_header();
                                         <div class="clm-form-field">
                                             <label><?php _e('Visibility', 'choir-lyrics-manager'); ?></label>
                                             <div class="clm-radio-group">
-                                                <label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="private" checked> <?php _e('Private', 'choir-lyrics-manager'); ?></label>
-                                                <label><input type="radio" name="clm-playlist-visibility-<?php the_ID(); ?>" value="public"> <?php _e('Public', 'choir-lyrics-manager'); ?></label>
+                                                <label>
+                                                    <input type="radio" 
+                                                           name="clm_playlist_visibility_<?php the_ID(); ?>" 
+                                                           value="private" 
+                                                           checked> 
+                                                    <?php _e('Private', 'choir-lyrics-manager'); ?>
+                                                </label>
+                                                <label>
+                                                    <input type="radio" 
+                                                           name="clm_playlist_visibility_<?php the_ID(); ?>" 
+                                                           value="public"> 
+                                                    <?php _e('Public', 'choir-lyrics-manager'); ?>
+                                                </label>
                                             </div>
                                         </div>
                                         
                                         <div class="clm-form-actions">
-                                            <button class="clm-submit-playlist clm-button clm-button-primary" data-lyric-id="<?php the_ID(); ?>">
+                                            <button class="clm-submit-playlist clm-button clm-button-primary" data-lyric-id="<?php echo esc_attr(get_the_ID()); ?>">
                                                 <?php _e('Create', 'choir-lyrics-manager'); ?>
                                             </button>
-                                            <button class="clm-cancel-playlist clm-button">
+                                            <button type="button" class="clm-cancel-playlist clm-button">
                                                 <?php _e('Cancel', 'choir-lyrics-manager'); ?>
                                             </button>
                                         </div>
@@ -401,40 +457,118 @@ get_header();
             </div>
         <?php endif; ?>
         
-        <!-- Fixed Pagination -->
-        <div class="clm-pagination" data-container="archive">
-            <?php
-            // Initial pagination for non-AJAX loads
-            $current_page = max(1, get_query_var('paged') ?: 1);
-            if ($wp_query->max_num_pages > 1) {
-                echo paginate_links(array(
-                    'prev_text' => '<span class="dashicons dashicons-arrow-left-alt2"></span> ' . __('Previous', 'choir-lyrics-manager'),
-                    'next_text' => __('Next', 'choir-lyrics-manager') . ' <span class="dashicons dashicons-arrow-right-alt2"></span>',
-                    'type' => 'list',
-                    'mid_size' => 2,
-                    'end_size' => 1,
-                    'current' => $current_page,
-                    'total' => $wp_query->max_num_pages,
-                    'format' => '?paged=%#%',
-                    'add_args' => array_filter($_GET, function($key) {
-                        return !in_array($key, ['paged', 'page']);
-                    }, ARRAY_FILTER_USE_KEY),
-                    'base' => str_replace(999999999, '%#%', esc_url(get_pagenum_link(999999999)))
-                ));
-                ?>
-                
-                <div class="clm-page-jump">
-                    <label for="clm-page-jump-input"><?php _e('Jump to page:', 'choir-lyrics-manager'); ?></label>
-                    <input type="number" 
-                           id="clm-page-jump-input"
-                           name="clm_page_jump" 
-                           min="1" 
-                           max="<?php echo $wp_query->max_num_pages; ?>" 
-                           value="<?php echo $current_page; ?>">
-                    <button id="clm-page-jump-button" class="clm-button-small"><?php _e('Go', 'choir-lyrics-manager'); ?></button>
-                </div>
-            <?php } ?>
-        </div>
+        <!-- Fixed Pagination with Consistent Classes -->
+		<!-- Improved Pagination with Consistent Classes and Complete Data Attributes -->
+		<div class="clm-pagination" data-container="archive" data-current-page="<?php echo esc_attr($current_page); ?>" data-max-pages="<?php echo esc_attr($wp_query->max_num_pages); ?>">
+			<?php if ($wp_query->max_num_pages > 1) : ?>
+				<div class="clm-pagination-wrapper">
+					
+					<!-- Previous Button -->
+					<?php if ($current_page > 1) : ?>
+						<a class="clm-page-link clm-prev" 
+						   href="<?php echo esc_url(add_query_arg('paged', $current_page - 1, get_pagenum_link())); ?>" 
+						   data-page="<?php echo esc_attr($current_page - 1); ?>"
+						   aria-label="<?php esc_attr_e('Go to previous page', 'choir-lyrics-manager'); ?>">
+							<span class="dashicons dashicons-arrow-left-alt2"></span>
+							<span class="clm-nav-text"><?php _e('Previous', 'choir-lyrics-manager'); ?></span>
+						</a>
+					<?php else : ?>
+						<span class="clm-page-link clm-prev disabled" aria-disabled="true">
+							<span class="dashicons dashicons-arrow-left-alt2"></span>
+							<span class="clm-nav-text"><?php _e('Previous', 'choir-lyrics-manager'); ?></span>
+						</span>
+					<?php endif; ?>
+					
+					<!-- Numbered Pages -->
+					<?php
+					// Calculate page numbers to show
+					$start_page = max(1, $current_page - 2);
+					$end_page = min($wp_query->max_num_pages, $current_page + 2);
+					
+					// Show first page if not in range
+					if ($start_page > 1) : ?>
+						<a class="clm-page-link" 
+						   href="<?php echo esc_url(add_query_arg('paged', 1, get_pagenum_link())); ?>" 
+						   data-page="1"
+						   aria-label="<?php esc_attr_e('Go to page 1', 'choir-lyrics-manager'); ?>">
+						   1
+						</a>
+						<?php if ($start_page > 2) : ?>
+							<span class="clm-page-link clm-dots" aria-hidden="true">...</span>
+						<?php endif;
+					endif;
+					
+					// Page numbers
+					for ($i = $start_page; $i <= $end_page; $i++) :
+						if ($i == $current_page) : ?>
+							<span class="clm-page-link clm-current current" 
+								  data-page="<?php echo esc_attr($i); ?>" 
+								  aria-current="page"
+								  aria-label="<?php echo esc_attr(sprintf(__('Current page, page %s', 'choir-lyrics-manager'), $i)); ?>">
+								  <?php echo esc_html($i); ?>
+							</span>
+						<?php else : ?>
+							<a class="clm-page-link" 
+							   href="<?php echo esc_url(add_query_arg('paged', $i, get_pagenum_link())); ?>" 
+							   data-page="<?php echo esc_attr($i); ?>"
+							   aria-label="<?php echo esc_attr(sprintf(__('Go to page %s', 'choir-lyrics-manager'), $i)); ?>">
+							   <?php echo esc_html($i); ?>
+							</a>
+						<?php endif;
+					endfor;
+					
+					// Show last page if not in range
+					if ($end_page < $wp_query->max_num_pages) :
+						if ($end_page < $wp_query->max_num_pages - 1) : ?>
+							<span class="clm-page-link clm-dots" aria-hidden="true">...</span>
+						<?php endif; ?>
+						<a class="clm-page-link" 
+						   href="<?php echo esc_url(add_query_arg('paged', $wp_query->max_num_pages, get_pagenum_link())); ?>" 
+						   data-page="<?php echo esc_attr($wp_query->max_num_pages); ?>"
+						   aria-label="<?php echo esc_attr(sprintf(__('Go to page %s', 'choir-lyrics-manager'), $wp_query->max_num_pages)); ?>">
+						   <?php echo esc_html($wp_query->max_num_pages); ?>
+						</a>
+					<?php endif; ?>
+					
+					<!-- Next Button -->
+					<?php if ($current_page < $wp_query->max_num_pages) : ?>
+						<a class="clm-page-link clm-next" 
+						   href="<?php echo esc_url(add_query_arg('paged', $current_page + 1, get_pagenum_link())); ?>" 
+						   data-page="<?php echo esc_attr($current_page + 1); ?>"
+						   aria-label="<?php esc_attr_e('Go to next page', 'choir-lyrics-manager'); ?>">
+							<span class="clm-nav-text"><?php _e('Next', 'choir-lyrics-manager'); ?></span>
+							<span class="dashicons dashicons-arrow-right-alt2"></span>
+						</a>
+					<?php else : ?>
+						<span class="clm-page-link clm-next disabled" aria-disabled="true">
+							<span class="clm-nav-text"><?php _e('Next', 'choir-lyrics-manager'); ?></span>
+							<span class="dashicons dashicons-arrow-right-alt2"></span>
+						</span>
+					<?php endif; ?>
+					
+				</div><!-- End .clm-pagination-wrapper -->
+			<?php endif; ?>
+			
+			<!-- Page Jump Form - Improved with ARIA attributes and proper IDs -->
+			<?php if ($wp_query->max_num_pages > 1) : ?>
+			<div class="clm-page-jump">
+				<label for="clm-page-jump-input"><?php _e('Jump to page:', 'choir-lyrics-manager'); ?></label>
+				<input type="number" 
+					   id="clm-page-jump-input"
+					   class="clm-page-jump-input"
+					   min="1" 
+					   max="<?php echo esc_attr($wp_query->max_num_pages); ?>" 
+					   value="<?php echo esc_attr($current_page); ?>">
+				<!-- Note the direct onclick attribute - this bypasses jQuery event binding issues -->
+				<button type="button" 
+						id="clm-page-jump-button" 
+						class="clm-go-button"
+						onclick="return window.clmPageJump(this);">
+					<?php _e('Go', 'choir-lyrics-manager'); ?>
+				</button>
+			</div>
+		<?php endif; ?>
+		</div><!-- End .clm-pagination -->
     </div>
 </div>
 
@@ -460,7 +594,9 @@ wp_localize_script('clm-public', 'clm_vars', array(
     'query' => array(
         'items_per_page' => $items_per_page,
         'orderby' => $orderby,
-        'order' => $order
+        'order' => $order,
+        'current_page' => $current_page,
+        'max_pages' => $wp_query->max_num_pages
     ),
 ));
 

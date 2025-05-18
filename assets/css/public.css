@@ -1,10 +1,13 @@
 /**
- * Fixed Public CSS for Choir Lyrics Manager
+ * Unified Public CSS for Choir Lyrics Manager
  * Handles logged-in and non-logged-in user states
  * @package Choir_Lyrics_Manager
+ * @version 1.1.0
  */
 
-/* Reset and Container */
+/* ==================== 
+   Reset and Container 
+   ==================== */
 .clm-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -15,7 +18,9 @@
     box-sizing: border-box;
 }
 
-/* Page Header */
+/* ==================== 
+   Page Header 
+   ==================== */
 .clm-archive-header {
     margin-bottom: 30px;
     text-align: center;
@@ -27,7 +32,9 @@
     color: #333;
 }
 
-/* Search Section */
+/* ==================== 
+   Search Section 
+   ==================== */
 .clm-search-section {
     background: #f8f9fa;
     padding: 30px 20px;
@@ -104,7 +111,9 @@
     margin-top: 5px;
 }
 
-/* Quick Filters */
+/* ==================== 
+   Quick Filters 
+   ==================== */
 .clm-quick-filters {
     text-align: center;
     margin-top: 20px;
@@ -135,8 +144,11 @@
     border-color: #007cba;
 }
 
-/* Results Controls */
-.clm-results-controls {
+/* ==================== 
+   Results Controls 
+   ==================== */
+.clm-results-controls,
+.clm-results-info-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -193,7 +205,9 @@
     border-color: #007cba;
 }
 
-/* Advanced Filters */
+/* ==================== 
+   Advanced Filters 
+   ==================== */
 .clm-advanced-filters {
     background: #f8f9fa;
     padding: 30px;
@@ -224,7 +238,9 @@
     font-size: 14px;
 }
 
-/* Alphabet Navigation */
+/* ==================== 
+   Alphabet Navigation 
+   ==================== */
 .clm-alphabet-nav {
     text-align: center;
     margin-bottom: 30px;
@@ -261,7 +277,9 @@
     border-color: #007cba;
 }
 
-/* Items List */
+/* ==================== 
+   Items List 
+   ==================== */
 .clm-items-list {
     list-style: none;
     margin: 0;
@@ -319,7 +337,9 @@
     color: #555;
 }
 
-/* Item Actions */
+/* ==================== 
+   Item Actions 
+   ==================== */
 .clm-item-actions {
     display: flex;
     gap: 10px;
@@ -336,9 +356,17 @@ body:not(.logged-in) .clm-create-playlist-form {
 /* Adjust layout for logged-out users */
 body:not(.logged-in) .clm-item-actions {
     justify-content: flex-start;
+    display: block;
 }
 
-/* Buttons */
+body:not(.logged-in) .clm-skill-status-widget,
+body:not(.logged-in) .clm-practice-tracker {
+    display: none;
+}
+
+/* ==================== 
+   Buttons .
+   ==================== */
 .clm-button {
     display: inline-block;
     padding: 10px 20px;
@@ -371,7 +399,15 @@ body:not(.logged-in) .clm-item-actions {
     font-size: 13px;
 }
 
-/* Create Playlist Form */
+.clm-button-primary {
+    background: #28a745;
+}
+
+.clm-button-primary:hover {
+    background: #218838;
+}
+
+/* Create Playlist Button */
 .clm-create-playlist-button {
     background: #28a745;
 }
@@ -380,6 +416,9 @@ body:not(.logged-in) .clm-item-actions {
     background: #218838;
 }
 
+/* ==================== 
+   Create Playlist Form 
+   ==================== */
 .clm-create-playlist-form {
     display: none;
     background: #f9f9f9;
@@ -441,556 +480,438 @@ body:not(.logged-in) .clm-item-actions {
     gap: 10px;
 }
 
-.clm-button-primary {
-    background: #28a745;
-}
+/**
+ * Updated Pagination Styles for Choir Lyrics Manager
+ * 
+ * This replaces the three pagination sections at the end of your public.css file.
+ * Replace everything from /* ==================== Unified Pagination Styles ==================== */ 
+ * to the end of the file with this cleaner, consolidated version.
+ */
 
-.clm-button-primary:hover {
-    background: #218838;
-}
-
-/* Fixed Pagination Styles */
-.clm-pagination {
+/* ==================== 
+   Unified Pagination Styles 
+   ==================== */
+.clm-pagination,
+.clm-shortcode-pagination {
+    width: 100%;
     margin: 40px 0;
     text-align: center;
-}
-
-.clm-pagination .page-numbers {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 5px;
+    clear: both;
 }
 
-.clm-pagination .page-numbers li {
-    display: inline-block;
-    margin: 0;
+/* Pagination Wrapper */
+.clm-pagination-wrapper,
+.page-numbers,
+.nav-links {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    margin: 0 0 15px 0 !important;
+    list-style: none !important;
+    padding: 0 !important;
 }
 
+/* Individual Page Links - Core styling with !important to overcome theme conflicts */
+.clm-page-link, 
+.page-numbers,
+.clm-pagination-wrapper a,
+.clm-pagination-wrapper span,
 .clm-pagination .page-numbers a,
-.clm-pagination .page-numbers span {
-    display: inline-block;
-    padding: 8px 16px;
-    min-width: 40px;
-    text-align: center;
-    text-decoration: none;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #333;
-    background: white;
-    transition: all 0.3s ease;
-    font-size: 14px;
-    line-height: 1.5;
+.clm-pagination .page-numbers span,
+.clm-shortcode-pagination .page-numbers a,
+.clm-shortcode-pagination .page-numbers span,
+.clm-shortcode-pagination a,
+.clm-shortcode-pagination span {
+    color: #333 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 5px 10px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    background: white !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
 }
 
-.clm-pagination .page-numbers a:hover {
-    border-color: #007cba;
-    background: #f8f9fa;
-    color: #007cba;
+/* Current Page Styling */
+.clm-page-link.clm-current,
+span.page-numbers.current,
+.current,
+.clm-pagination .current,
+.clm-pagination .clm-current,
+.clm-shortcode-pagination .current,
+.clm-shortcode-pagination .clm-current,
+.page-numbers .current,
+.page-numbers .clm-current,
+span.page-numbers.current,
+span.clm-page-link.clm-current {
+    background-color: #007cba !important;
+    color: white !important;
+    border-color: #007cba !important;
+    font-weight: 500 !important;
+    pointer-events: none !important;
 }
 
-.clm-pagination .page-numbers .current {
-    background: #007cba;
-    color: white;
-    border-color: #007cba;
-    cursor: default;
+/* Hover State */
+.clm-page-link:hover:not(.clm-current, .disabled, .clm-dots),
+.page-numbers:hover:not(.current, .disabled, .dots),
+.page-numbers a:hover,
+.clm-pagination-wrapper a:hover {
+    border-color: #007cba !important;
+    background: #f8f9fa !important;
+    color: #007cba !important;
 }
 
-.clm-pagination .page-numbers .dots {
-    border: none;
-    background: transparent;
-    cursor: default;
+/* Dots Separator */
+.clm-page-link.clm-dots,
+.page-numbers.dots,
+.dots {
+    border: none !important;
+    background: transparent !important;
+    cursor: default !important;
 }
 
-.clm-pagination .page-numbers .prev,
-.clm-pagination .page-numbers .next {
-    padding: 8px 16px;
+/* Previous/Next Buttons */
+.clm-page-link.clm-prev,
+.clm-page-link.clm-next,
+.page-numbers.prev,
+.page-numbers.next,
+.prev, 
+.next {
+    padding: 5px 15px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
 }
 
-.clm-pagination .page-numbers .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
+/* Disabled State */
+.clm-page-link.disabled,
+.page-numbers.disabled,
+.disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
 
-/* Page Jump */
+/* Dashicons in pagination */
+.clm-page-link .dashicons,
+.page-numbers .dashicons {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
+
+/* Page Jump Form */
 .clm-page-jump {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: 20px;
+    margin-top: 15px;
+    justify-content: center;
 }
 
 .clm-page-jump label {
     font-size: 14px;
+    color: #555;
+    margin-right: 5px;
 }
 
+.clm-page-jump-input,
 #clm-page-jump-input {
     width: 60px;
-    padding: 6px 10px;
+    padding: 8px 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    text-align: center;
 }
 
-#clm-page-jump-button {
-    padding: 6px 16px;
-    background: #007cba;
-    color: white;
-    border: none;
-    border-radius: 4px;
+.clm-page-jump-input:focus,
+#clm-page-jump-input:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+    outline: 2px solid transparent;
+}
+
+.clm-page-jump-button,
+.clm-page-jump button,
+#clm-page-jump-button,
+.clm-go-button {
+    padding: 8px 16px;
+    background: #007cba !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
     cursor: pointer;
     font-size: 14px;
+    transition: background 0.2s ease;
 }
 
-#clm-page-jump-button:hover {
-    background: #005a87;
+.clm-page-jump-button:hover,
+.clm-page-jump button:hover,
+#clm-page-jump-button:hover,
+.clm-go-button:hover {
+    background: #005a87 !important;
 }
 
-/* Loading Overlay */
-#clm-loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: 9999;
-    display: none;
-    align-items: center;
-    justify-content: center;
+/* Force page 1 styling on page 1 (specific case) */
+body:not([class*="paged-"]) .page-numbers a:first-of-type,
+body.paged-1 .page-numbers a:first-of-type,
+body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
+body.paged-1 .clm-pagination-wrapper a:first-of-type {
+    background-color: #007cba !important;
+    color: white !important;
+    border-color: #007cba !important;
+    font-weight: 500 !important;
+    pointer-events: none !important;
 }
 
-.clm-loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #007cba;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* Modal styles */
-.clm-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.clm-modal {
-    background: white;
-    border-radius: 8px;
-    padding: 30px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
-}
-
-.clm-modal h3 {
-    margin: 0 0 15px;
-    font-size: 1.3em;
-}
-
-.clm-modal p {
-    margin-bottom: 20px;
-    color: #666;
-}
-
-.clm-goal-date-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    margin-bottom: 20px;
-}
-
-.clm-modal-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-/* Notification styles */
-.clm-notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    border-radius: 4px;
-    color: white;
-    font-weight: 500;
-    z-index: 10001;
-    display: none;
-}
-
-.clm-notification-success {
-    background: #28a745;
-}
-
-.clm-notification-error {
-    background: #dc3545;
-}
-
-.clm-notification-info {
-    background: #17a2b8;
-}
-
-.clm-notification-warning {
-    background: #ffc107;
-    color: #856404;
-}
-
-/* Skill Status Widget */
-.clm-skill-status-widget {
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-}
-
-.clm-skill-status-widget h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-.clm-current-skill {
-    text-align: center;
-}
-
-.clm-skill-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 25px;
-    color: white;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-.clm-skill-badge .dashicons {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-}
-
-.clm-skill-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin: 20px 0;
-    text-align: left;
-}
-
-.clm-skill-stats p {
-    margin: 0;
-    padding: 10px;
-    background: white;
-    border-radius: 4px;
-    border: 1px solid #eee;
-}
-
-.clm-skill-progress {
-    margin-top: 20px;
-}
-
-.clm-progress-bar {
-    width: 100%;
-    height: 20px;
-    background: #e0e0e0;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
-
-/* Combine progress fill definitions and add vendor prefixes */
-.clm-progress-fill {
-    height: 100%;
-    -webkit-transition: width 1s ease-out;
-    transition: width 1s ease-out;
-}
-/* Add vendor prefixes to animations */
-@-webkit-keyframes spin {
-    100% {
-        -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
-    }
-}
-@keyframes spin {
-    100% {
-        -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
-    }
-}
-.clm-loading-spinner {
-    /* ... existing properties ... */
-    -webkit-animation: spin 1s linear infinite;
-    animation: spin 1s linear infinite;
-}
-.clm-skill-description {
-    text-align: center;
-    font-style: italic;
-    color: #666;
-    margin-top: 10px;
-}
-
-/* Logged-out specific styles */
-body:not(.logged-in) .clm-item-actions {
-    display: block;
-}
-
-body:not(.logged-in) .clm-skill-status-widget,
-body:not(.logged-in) .clm-practice-tracker {
-    display: none;
-}
-
-/* Fix for WordPress admin bar */
-.admin-bar .clm-modal-overlay,
-.admin-bar #clm-loading-overlay {
-    top: 32px;
-}
-
-@media screen and (max-width: 782px) {
-    .admin-bar .clm-modal-overlay,
-    .admin-bar #clm-loading-overlay {
-        top: 46px;
-    }
-}
-
-/* Animation fix for loading states */
-.spinning {
-    animation: spin 1s linear infinite;
-}
-
-/* Alert boxes */
-.clm-alert {
-    padding: 15px;
-    margin-bottom: 20px;
-    border: 1px solid transparent;
-    border-radius: 4px;
-}
-
-.clm-alert-info {
-    color: #31708f;
-    background-color: #d9edf7;
-    border-color: #bce8f1;
-}
-
-.clm-alert-warning {
-    color: #8a6d3b;
-    background-color: #fcf8e3;
-    border-color: #faebcc;
-}
-
-.clm-alert-danger {
-    color: #a94442;
-    background-color: #f2dede;
-    border-color: #ebccd1;
-}
-
-.clm-alert-success {
-    color: #3c763d;
-    background-color: #dff0d8;
-    border-color: #d6e9c6;
-}
-
-/* Fix star ratings */
-.clm-meta-difficulty .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: #ff9800;
-}
-
-.clm-meta-difficulty .dashicons-star-empty {
-    color: #ddd;
-}
-
-/* Responsive Design */
+/* Responsive pagination adjustments */
 @media (max-width: 768px) {
-    .clm-container {
-        padding: 10px;
+    .clm-page-link, 
+    .page-numbers,
+    .clm-pagination-wrapper a,
+    .clm-pagination-wrapper span {
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 6px 10px !important;
+        font-size: 13px !important;
     }
     
-    .clm-archive-title {
-        font-size: 2em;
-    }
-    
-    .clm-results-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .clm-view-options {
-        justify-content: space-between;
-        width: 100%;
-    }
-    
-    .clm-filters-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .clm-alphabet-nav {
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .clm-item-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .clm-button {
-        width: 100%;
-        text-align: center;
-    }
-    
-    .clm-pagination {
-        flex-wrap: wrap;
-    }
-    
-    .clm-page-jump {
-        margin-left: 0;
-        margin-top: 10px;
-        width: 100%;
-        justify-content: center;
+    .clm-page-link.clm-prev, 
+    .clm-page-link.clm-next,
+    .page-numbers.prev,
+    .page-numbers.next {
+        padding: 6px 12px !important;
     }
 }
 
 @media (max-width: 480px) {
-    .clm-pagination .page-numbers a,
-    .clm-pagination .page-numbers span {
-        padding: 6px 10px;
-        min-width: 32px;
-        font-size: 13px;
-    }
-}
-
-/* Utility Classes */
-.clm-hidden {
-    display: none !important;
-}
-
-.clm-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-
-/* Theme Compatibility */
-.clm-container button,
-.clm-container a.clm-button {
-    font-family: inherit;
-    text-transform: none;
-    letter-spacing: normal;
-    box-shadow: none;
-}
-
-/* Tooltip styles */
-.clm-tooltip {
-    position: absolute;
-    background: #333;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    z-index: 10000;
-    pointer-events: none;
-}
-
-/* Ensure shortcode pagination is visible */
-.clm-shortcode-pagination {
-    margin-top: 20px;
-    display: block !important; /* Force display */
-}
-
-.clm-shortcode-pagination .clm-pagination,
-.clm-shortcode-pagination .page-numbers {
-    display: block;
-    margin: 20px 0;
-}
-
-/* Style page numbers */
-.clm-shortcode-pagination .page-numbers {
-    text-align: center;
-}
-
-.clm-shortcode-pagination .page-numbers li {
-    display: inline-block;
-    margin: 0 2px;
-}
-
-.clm-shortcode-pagination .page-numbers a,
-.clm-shortcode-pagination .page-numbers span {
-    display: inline-block;
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    text-decoration: none;
-}
-
-.clm-shortcode-pagination .page-numbers .current {
-    background-color: #007cba;
-    color: white;
-    border-color: #007cba;
-}
-.clm-results-info-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.clm-results-info {
-    font-size: 16px;
-    color: #666;
-}
-
-.clm-results-count {
-    font-weight: 600;
-    color: #333;
-}
-
-.clm-view-options {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-@media (max-width: 768px) {
-    .clm-results-info-controls {
-        flex-direction: column;
-        align-items: flex-start;
+    .clm-pagination-wrapper,
+    .page-numbers {
+        gap: 3px !important;
     }
     
-    .clm-view-options {
-        width: 100%;
-        justify-content: space-between;
+    .clm-page-link, 
+    .page-numbers,
+    .clm-pagination-wrapper a,
+    .clm-pagination-wrapper span {
+        min-width: 32px !important;
+        height: 32px !important;
+        padding: 5px 8px !important;
+        font-size: 12px !important;
     }
+    
+    .clm-page-link .dashicons,
+    .page-numbers .dashicons {
+        font-size: 14px !important;
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    .clm-go-button {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+    }
+}
+
+border-radius: 4px !important;
+    font-size: 14px !important;
+    text-align: center !important;
+}
+
+.clm-page-jump-input:focus,
+#clm-page-jump-input:focus {
+    border-color: #007cba !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px rgba(0, 124, 186, 0.3) !important;
+}
+
+.clm-go-button,
+#clm-page-jump-button,
+.clm-page-jump button {
+    height: 36px !important;
+    padding: 0 16px !important;
+    background-color: #007cba !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.clm-go-button:hover,
+#clm-page-jump-button:hover,
+.clm-page-jump button:hover {
+    background-color: #005a87 !important;
+}
+
+/* Critical: Make links clickable */
+.clm-pagination a,
+.clm-shortcode-pagination a,
+.page-numbers a,
+a.page-numbers {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Ensure empty items display properly */
+.clm-page-link:empty::before,
+.page-numbers:empty::before {
+    content: attr(data-page, "•") !important;
+}
+
+.current:empty::before,
+.clm-current:empty::before,
+span.page-numbers.current:empty::before {
+    content: attr(data-page, "1") !important;
+}
+
+/* Fix aria attributes */
+.clm-pagination .clm-current,
+.clm-shortcode-pagination .clm-current,
+.page-numbers .current {
+    aria-current: "page" !important;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .clm-page-link,
+    .page-numbers a,
+    .page-numbers span:not(.dashicons):not(.clm-nav-text):not(.dots) {
+        min-width: 36px !important;
+        height: 36px !important;
+        padding: 5px 8px !important;
+        font-size: 13px !important;
+    }
+    
+    .clm-prev,
+    .clm-next,
+    .prev,
+    .next {
+        padding: 5px 10px !important;
+    }
+    
+    .clm-page-jump-input,
+    #clm-page-jump-input {
+        width: 50px !important;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .clm-pagination-wrapper,
+    ul.page-numbers {
+        gap: 4px !important;
+    }
+    
+    .clm-page-link,
+    .page-numbers a,
+    .page-numbers span:not(.dashicons):not(.clm-nav-text):not(.dots) {
+        min-width: 32px !important;
+        height: 32px !important;
+        padding: 4px 7px !important;
+        font-size: 12px !important;
+    }
+}
+
+
+
+/**
+ * CSS Fixes for Choir Lyrics Manager Pagination
+ * 
+ * This CSS should be added to your public.css file to fix pagination styling issues.
+ * It removes problematic rules that cause multiple highlighted buttons and unclickable links.
+ * 
+ * IMPORTANT: Add this to your public.css file at the *VERY END* to ensure it overrides 
+ * existing pagination styles.
+ */
+
+/* Fix for pagination links - ensure they're clickable */
+.clm-pagination a,
+.clm-shortcode-pagination a,
+.page-numbers a,
+a.page-numbers {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Remove problematic rule that causes multiple "current" buttons */
+body:not([class*="paged-"]) .page-numbers a:first-of-type,
+body.paged-1 .page-numbers a:first-of-type,
+body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
+body.paged-1 .clm-pagination-wrapper a:first-of-type {
+    background-color: white !important; 
+    color: #333 !important;
+    border-color: #ddd !important;
+    font-weight: normal !important;
+    pointer-events: auto !important;
+}
+
+/* Reset all pagination elements first */
+.clm-pagination a,
+.clm-pagination span,
+.clm-shortcode-pagination a,
+.clm-shortcode-pagination span,
+.page-numbers a,
+.page-numbers span,
+ul.page-numbers a,
+ul.page-numbers span {
+    background-color: white !important;
+    color: #333 !important;
+    border-color: #ddd !important;
+    font-weight: normal !important;
+    pointer-events: auto !important;
+}
+
+/* Then apply current styling only to specific elements */
+.clm-page-link.clm-current,
+span.page-numbers.current,
+.clm-pagination span.current,
+.clm-shortcode-pagination span.current,
+ul.page-numbers span.current {
+    background-color: #007cba !important;
+    color: white !important;
+    border-color: #007cba !important;
+    font-weight: 600 !important;
+    pointer-events: none !important;
+}
+
+/* Fix for dots styling */
+.clm-page-link.clm-dots,
+span.page-numbers.dots,
+.dots {
+    border: none !important;
+    background: transparent !important;
+    cursor: default !important;
+    pointer-events: none !important;
+}
+
+/* Fix for "go" button */
+.clm-go-button,
+#clm-page-jump-button,
+.clm-page-jump button {
+    background-color: #007cba !important;
+    color: white !important;
+    border: none !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
 }
