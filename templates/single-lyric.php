@@ -22,6 +22,26 @@ if (!isset($lyric)) {
     $lyric_id = $post->ID;
 }
 
+// Add this at the top of single-lyric.php after getting the post
+// Debug audio, video, etc. availability
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    $debug_meta = array(
+        'audio_file_id' => get_post_meta($lyric->ID, '_clm_audio_file_id', true),
+        'video_embed' => get_post_meta($lyric->ID, '_clm_video_embed', true),
+        'sheet_music_id' => get_post_meta($lyric->ID, '_clm_sheet_music_id', true),
+        'midi_file_id' => get_post_meta($lyric->ID, '_clm_midi_file_id', true),
+        'practice_tracks' => get_post_meta($lyric->ID, '_clm_practice_tracks', true)
+    );
+    error_log('Single lyric template DEBUG - Media for ID ' . $lyric->ID . ': ' . print_r($debug_meta, true));
+}
+
+
+error_log("Single lyric template for ID {$lyric->ID}: " . 
+         "Audio: " . ($audio_file_id ? $audio_file_id : 'None') . ", " .
+         "Video: " . ($video_embed ? 'Yes' : 'None') . ", " .
+         "Sheet: " . ($sheet_music_id ? $sheet_music_id : 'None') . ", " .
+         "MIDI: " . ($midi_file_id ? $midi_file_id : 'None'));
+
 // Get settings
 $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
 $show_difficulty_setting = $settings->get_setting('show_difficulty', true);

@@ -29,71 +29,7 @@
     let archiveUrl = '';  // Store archive URL
 
     
-    /**
-     * Initialize everything when document is ready
-     */
-    $(document).ready(function() {
-        console.log('CLM Public JS initializing...');
-        
-        // CRITICAL: Check if already initialized to prevent duplicate initialization
-        if (window.clmFullyInitialized) {
-            console.log('CLM already fully initialized, skipping');
-            return;
-        }
-        
-        // Check dependencies
-        if (typeof jQuery === 'undefined') {
-            console.error('CLM: jQuery is required but not loaded');
-            return;
-        }
-    
-        if (typeof clm_vars === 'undefined') {
-            console.error('CLM: Required variables not loaded');
-            return;
-        }
-    
-        // Get the archive URL if we're on an archive page
-        if ($('.clm-archive').length) {
-            // Store current page URL without query parameters
-            archiveUrl = window.location.href.split('?')[0];
-            console.log('Archive URL detected:', archiveUrl);
-        }
-    
-        // Check if nonces are available
-        if (!clm_vars || !clm_vars.nonce) {
-            console.error('CLM: Nonces not available in clm_vars');
-            
-            // Log what's available for debugging
-            if (clm_vars) {
-                console.log('CLM: Available clm_vars:', clm_vars);
-            }
-            
-            // Fallback for missing nonces
-            if (!clm_vars.nonce) {
-                clm_vars.nonce = {};
-            }
-        } else {
-            console.log('CLM: Nonces loaded successfully');
-        }
-        
-        // Initialize current page from URL or from data attribute in the container
-        let urlParams = new URLSearchParams(window.location.search);
-        let pageFromUrl = parseInt(urlParams.get('paged')) || 1;
-        let pageFromData = parseInt($('#clm-results-container').data('current-page')) || 1;
-        
-        // Use page from URL if available, otherwise use data attribute
-        currentPage = pageFromUrl || pageFromData;
-        console.log('Initial current page:', currentPage);
-    
-        // Initialize all interactive features
-        initializeFeatures();
-        
-        // Set initialization complete flag to prevent double initialization
-        window.clmFullyInitialized = true;
-        
-        console.log('CLM initialization complete');
-    });
-
+   
     window.initShortcodeFeatures = function(containerId) {
         const container = $('#' + containerId);
         if (!container.length) return;
@@ -415,62 +351,44 @@
     /**
      * Initialize alphabet navigation for the Choir Lyrics Manager
      */
-    function initAlphabetNav() {
-        console.log('Initializing main archive alphabet navigation');
-        
-        // First add a class to differentiate main alphabet links if not already done
-        $('.clm-archive .clm-alphabet-nav .clm-alpha-link').addClass('clm-main-alpha-link');
-        
-        // Use the specific class to target only main archive alphabet links
-        $('.clm-main-alpha-link').off('click').on('click', function(e) {
-            e.preventDefault();
-            
-            console.log('Main archive alphabet link clicked');
-            
-            // Check if we're accidentally in a shortcode container
-            if ($(this).closest('.clm-shortcode-container').length) {
-                console.log('Warning: This is actually a shortcode alphabet link, should not be handled here');
-                return;
-            }
-            
-            // Update UI - highlight the active letter
-            $('.clm-main-alpha-link').removeClass('active');
-            $(this).addClass('active');
+    // Update in public.js - initAlphabetNav function
+function initAlphabetNav() {
+    console.log('Initializing alphabet navigation');
     
-            // Get the selected letter
-            const letter = $(this).data('letter');
-            
-            console.log('Selected letter for main archive:', letter);
-            
-            // Update the current filters
-            if (letter === 'all') {
-                delete currentFilters.starts_with;
-                console.log('Removed starts_with filter (all selected)');
-            } else {
-                currentFilters.starts_with = letter;
-                console.log('Set starts_with filter to:', letter);
-            }
-            
-            console.log('Current filters after alphabet selection:', currentFilters);
-            
-            // Reset to first page
-            currentPage = 1;
-            
-            // Show loading state
-            if (typeof showLoadingOverlay === 'function') {
-                showLoadingOverlay();
-            } else {
-                console.log('showLoadingOverlay function not found, using direct jQuery');
-                $('#clm-loading-overlay').show();
-            }
-            
-            // Perform the AJAX request with the main archive search
-            console.log('Calling performSearch() for main archive alphabet filtering');
-            performSearch();
-        });
+    // Use specific selector to avoid conflicts with other elements
+    $('.clm-alphabet-nav .clm-alpha-link').off('click').on('click', function(e) {
+        e.preventDefault();
         
-        console.log('Main archive alphabet navigation initialized');
-    }
+        const $link = $(this);
+        const letter = $link.data('letter');
+        
+        console.log('Alphabet link clicked: ' + letter);
+        
+        // Skip if already active
+        if ($link.hasClass('active')) {
+            console.log('Link already active, skipping');
+            return;
+        }
+        
+        // Update UI
+        $('.clm-alpha-link').removeClass('active');
+        $link.addClass('active');
+        
+        // Update filter
+        if (letter === 'all') {
+            delete currentFilters.starts_with;
+            console.log('Removed starts_with filter (all selected)');
+        } else {
+            currentFilters.starts_with = letter;
+            console.log('Set starts_with filter to: ' + letter);
+        }
+        
+        // Reset to first page and perform search
+        currentPage = 1;
+        console.log('Performing search with alphabet filter');
+        performSearch();
+    });
+}
 
             /**
          * Show loading overlay during AJAX requests
@@ -619,34 +537,36 @@ function initPagination() {
      * @return {number|null} - The page number or null if not found
      */
     function getPageNumber($element) {
-        console.log('Getting page number from:', $element.prop('tagName'), 'class:', $element.attr('class'), 'text:', $element.text().trim());
-        
+        console.log('Getting page number from:', $element.prop('tagName'), 
+        'class:', $element.attr('class'), 
+        'text:', $element.text().trim());
+
         // First check data-page attribute
         if ($element.data('page')) {
-            console.log('Found page from data attribute:', $element.data('page'));
-            return parseInt($element.data('page'));
+        console.log('Found page from data attribute:', $element.data('page'));
+        return parseInt($element.data('page'));
         }
-        
+
         // Try to get from link text if it's a number
         const text = $element.text().trim();
         if (/^\d+$/.test(text)) {
-            console.log('Found page from text content:', text);
-            return parseInt(text);
+        console.log('Found page from text content:', text);
+        return parseInt(text);
         }
-        
+
         // Check for prev/next links
         if ($element.hasClass('prev') || $element.text().includes('Previous')) {
-            const prevPage = Math.max(1, currentPage - 1);
-            console.log('Previous link detected, page:', prevPage);
-            return prevPage;
+        const prevPage = Math.max(1, currentPage - 1);
+        console.log('Previous link detected, page:', prevPage);
+        return prevPage;
         }
-        
+
         if ($element.hasClass('next') || $element.text().includes('Next')) {
-            const nextPage = currentPage + 1;
-            console.log('Next link detected, page:', nextPage);
-            return nextPage;
+        const nextPage = currentPage + 1;
+        console.log('Next link detected, page:', nextPage);
+        return nextPage;
         }
-        
+                
         // Try to extract from href
         const href = $element.attr('href');
         if (href) {
@@ -675,6 +595,35 @@ function initPagination() {
         console.log('Could not determine page number');
         return null;
     }
+
+
+    // Update in public.js - add window.clmPageJump function
+    window.clmPageJump = function(button) {
+        console.log('Page jump button clicked');
+        
+        const $button = $(button);
+        const $container = $button.closest('.clm-pagination, .clm-shortcode-pagination');
+        const $input = $container.find('#clm-page-jump-input, .clm-page-jump-input');
+        
+        if (!$input.length) {
+            console.log('Page jump input not found');
+            return false;
+        }
+        
+        const page = parseInt($input.val());
+        const maxPage = parseInt($input.attr('max') || 9999);
+        
+        console.log('Jump to page:', page, 'max:', maxPage);
+        
+        if (!page || page < 1 || page > maxPage || page === currentPage) {
+            console.log('Invalid page number');
+            return false;
+        }
+        
+        // Perform search with the new page
+        performSearch(page);
+        return false;
+    };
 
     /**
      * Add page parameter to URL correctly
@@ -725,27 +674,23 @@ function initPagination() {
     
     // Use provided page or current page
     page = page || currentPage || 1;
+    console.log('Performing search for page: ' + page);
     
     // Get search query from input
     const searchQuery = $('#clm-search-input').val() || '';
     
     // Collect all filters
     const filters = collectFilters();
+    console.log('Current filters:', filters);
+    console.log('Current starts_with:', currentFilters.starts_with);
     
     // Double-check that starts_with from currentFilters is included
     if (currentFilters.starts_with && !filters.starts_with) {
-        console.log('Explicitly adding starts_with to search filters:', currentFilters.starts_with);
+        console.log('Adding starts_with to filters: ' + currentFilters.starts_with);
         filters.starts_with = currentFilters.starts_with;
     }
     
-    // Log request for debugging
-    console.log('Performing main archive search with:', {
-        search: searchQuery,
-        filters: filters,
-        page: page
-    });
-    
-    // Show loading overlay
+    // Show loading overlay    
     if (typeof showLoadingOverlay === 'function') {
         showLoadingOverlay();
     } else {
@@ -871,21 +816,7 @@ function scrollToResults() {
     }
 
 
-    // Debug function to help diagnose alphabet filter issues
-        window.debugAlphabetFilter = function() {
-            console.log('Current filters:', currentFilters);
-            console.log('Active letter:', $('.clm-alpha-link.active').data('letter'));
-            
-            // Check if events are bound
-            const events = $._data($('.clm-alpha-link')[0], 'events');
-            console.log('Events bound to alphabet links:', events);
-            
-            // Test click event
-            console.log('Simulating click on letter A...');
-            $('.clm-alpha-link[data-letter="A"]').trigger('click');
-        }
-
-
+   
     /**
      * Update page content after AJAX response
      * Enhanced to ensure pagination links are properly initialized
@@ -1431,6 +1362,8 @@ function scrollToResults() {
      * @param {jQuery} container - The shortcode container
      */
     function initShortcodeAlphabet(container) {
+        console.log('Initializing alphabet filter for container', container.attr('id'));
+        
         // Alphabet navigation
         container.find('.clm-alpha-link').off('click').on('click', function(e) {
             e.preventDefault();
@@ -1443,8 +1376,16 @@ function scrollToResults() {
             console.log('Alphabet filter selected letter:', letter);
             
             if (container.data('ajax') === 'yes') {
-                // Use AJAX filtering
-                performShortcodeSearch(container, 1);
+                try {
+                    // Store the letter in a data attribute for the search
+                    container.attr('data-selected-letter', letter === 'all' ? '' : letter);
+                    
+                    // Perform search with page 1
+                    performShortcodeSearch(container, 1);
+                } catch (error) {
+                    console.error('Error in alphabet filter:', error);
+                    alert('An error occurred with the filter. Please try again.');
+                }
             } else {
                 // Use client-side filtering for non-AJAX mode
                 if (letter === 'all') {
@@ -1455,8 +1396,6 @@ function scrollToResults() {
                         $(this).toggle(title && title.charAt(0).toUpperCase() === letter);
                     });
                 }
-                
-                updateShortcodeResultsCount(container);
             }
         });
     }
@@ -1570,7 +1509,7 @@ function performShortcodeSearch(container, page) {
     container.find('.clm-loading-overlay').show();
     
     // Get the nonce and other parameters
-    const nonce = container.data('nonce') || (clm_vars.nonce ? clm_vars.nonce.filter : '');
+    const nonce = clm_vars.nonce.filter;
     const itemsPerPage = parseInt(container.attr('data-per-page')) || 20;
     const orderBy = container.attr('data-orderby') || 'title';
     const order = container.attr('data-order') || 'ASC';
@@ -1598,9 +1537,9 @@ function performShortcodeSearch(container, page) {
     });
     
     // Add alphabet filter if active
-    const activeAlphaLink = container.find('.clm-alpha-link.active');
-    if (activeAlphaLink.length && activeAlphaLink.data('letter') !== 'all') {
-        requestData.starts_with = activeAlphaLink.data('letter');
+    const selectedLetter = container.attr('data-selected-letter');
+    if (selectedLetter) {
+        requestData.starts_with = selectedLetter;
     }
     
     console.log('Performing shortcode search with data:', requestData);
@@ -1611,119 +1550,85 @@ function performShortcodeSearch(container, page) {
         container.data('current-request').abort();
     }
     
-    // Make the AJAX request
-    const request = clmAjaxRequest('shortcode_filter', requestData, function(response) {
-        container.find('.clm-loading-overlay').hide();
-        
-        if (response.success) {
-            console.log('Search successful, updating content');
-            
-            // Update the results content
-            if (response.data.html !== undefined) {
-                container.find('.clm-shortcode-results').html(response.data.html);
-            }
-            
-            // Update count if available
-            if (container.find('.clm-results-count').length && response.data.total !== undefined) {
-                container.find('.clm-results-count').text(response.data.total);
-            }
-            
-            // Update pagination if available
-            if (response.data.pagination) {
-                console.log('Updating pagination');
+    // Make the AJAX request with error handling
+    try {
+        const request = clmAjaxRequest('shortcode_filter', requestData, 
+            function(response) {
+                container.find('.clm-loading-overlay').hide();
                 
-                // Get or create pagination container
-                let paginationContainer = container.find('.clm-shortcode-pagination');
-                if (paginationContainer.length === 0) {
-                    container.find('.clm-shortcode-results').after('<div class="clm-shortcode-pagination"></div>');
-                    paginationContainer = container.find('.clm-shortcode-pagination');
+                if (response.success) {
+                    console.log('Search successful, updating content');
+                    
+                    // Update the results content
+                    if (response.data.html !== undefined) {
+                        container.find('.clm-shortcode-results').html(response.data.html);
+                    }
+                    
+                    // Update count if available
+                    if (container.find('.clm-results-count').length && response.data.total !== undefined) {
+                        container.find('.clm-results-count').text(response.data.total);
+                    }
+                    
+                    // Update pagination if available
+                    if (response.data.pagination) {
+                        let paginationContainer = container.find('.clm-shortcode-pagination');
+                        if (paginationContainer.length === 0) {
+                            container.find('.clm-shortcode-results').after('<div class="clm-shortcode-pagination"></div>');
+                            paginationContainer = container.find('.clm-shortcode-pagination');
+                        }
+                        
+                        paginationContainer.html(response.data.pagination);
+                        paginationContainer.show();
+                        
+                        // Initialize pagination for the new content
+                        setTimeout(function() {
+                            initShortcodePagination(container);
+                        }, 100);
+                    }
+                } else {
+                    console.error('Shortcode filter failed:', response.data);
+                    showNotification(response.data && response.data.message ? response.data.message : 'Error loading results', 'error');
                 }
+            }, 
+            function(xhr, status, error) {
+                container.find('.clm-loading-overlay').hide();
                 
-                // Update with new pagination HTML - critical to add a class for debugging
-                const paginationHtml = response.data.pagination.replace(
-                    'class="clm-pagination-wrapper"',
-                    'class="clm-pagination-wrapper clm-ajax-updated"'
-                );
-                paginationContainer.html(paginationHtml);
-                paginationContainer.show();
+                console.error('Shortcode search error:', status, error);
                 
-                // Make sure page jump input has current page
-                paginationContainer.find('.clm-page-jump-input').val(requestData.page);
-                
-                // Process all pagination links to ensure proper functionality
-                console.log('Fixing pagination links');
-                paginationContainer.find('a').each(function() {
-                    const $link = $(this);
-                    
-                    // First fix href to ensure all links have proper URLs
-                    if (!$link.attr('href') || $link.attr('href') === '#') {
-                        const pageNum = getPageNumber($link);
-                        if (pageNum) {
-                            $link.attr('href', '#page-' + pageNum);
+                if (status !== 'abort') {
+                    try {
+                        // Try to parse the error response
+                        let errorMessage = 'Error connecting to server. Please try again.';
+                        
+                        if (xhr.responseText) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                if (response && response.data && response.data.message) {
+                                    errorMessage = response.data.message;
+                                }
+                            } catch (e) {
+                                // If we can't parse the JSON, use the status text
+                                errorMessage = 'Server error: ' + (xhr.statusText || 'Unknown error');
+                            }
                         }
+                        
+                        showNotification(errorMessage, 'error');
+                    } catch (e) {
+                        // Ultimate fallback
+                        showNotification('An unexpected error occurred. Please try again.', 'error');
                     }
-                    
-                    // Next add data-page attributes if missing
-                    const pageNum = getPageNumber($link);
-                    if (pageNum && !$link.data('page')) {
-                        $link.attr('data-page', pageNum);
-                    }
-                    
-                    // Make sure it has clm-page-link class
-                    if (!$link.hasClass('clm-page-link')) {
-                        $link.addClass('clm-page-link');
-                    }
-                });
-                
-                // Manually fix the current page styling
-                paginationContainer.find('a, span').each(function() {
-                    const $item = $(this);
-                    const itemText = $item.text().trim();
-                    
-                    // For the current page
-                    if (itemText === requestData.page.toString()) {
-                        if ($item.is('a')) {
-                            // Replace link with span for current page
-                            const $span = $('<span class="clm-page-link clm-current">' + itemText + '</span>');
-                            $item.replaceWith($span);
-                        } else if (!$item.hasClass('clm-current')) {
-                            $item.addClass('clm-current');
-                        }
-                    }
-                    // For non-current pages
-                    else if ($item.hasClass('clm-current') && itemText !== requestData.page.toString()) {
-                        $item.removeClass('clm-current');
-                    }
-                });
-                
-                // Force a quick re-initialization to make sure events are attached
-                setTimeout(function() {
-                    initShortcodePagination(container);
-                }, 100);
+                }
             }
-            
-            // Reinitialize features for the new content
-            if ($('body').hasClass('logged-in')) {
-                initPlaylistManagement();
-            }
-            
-            // Scroll to results for pagination when needed
-            if (requestData.page > 1) {
-                $('html, body').animate({
-                    scrollTop: Math.max(0, container.offset().top - 100)
-                }, 300);
-            }
-        } else {
-            console.error('Shortcode filter failed:', response.data);
-            showNotification(response.data && response.data.message ? response.data.message : 'Error loading results', 'error');
-        }
-    }, function() {
+        );
+        
+        // Store current request in container data
+        container.data('current-request', request);
+        
+    } catch (error) {
         container.find('.clm-loading-overlay').hide();
-        showNotification('Error connecting to server. Please try again.', 'error');
-    });
-    
-    // Store current request in container data
-    container.data('current-request', request);
+        console.error('Error in AJAX request setup:', error);
+        showNotification('Failed to start search. Please try again.', 'error');
+    }
 }
 
 
@@ -2661,24 +2566,6 @@ function performShortcodeSearch(container, page) {
 
 })(jQuery);
 
-// Utility function for debugging the alphabet filtering
-window.debugAlphabetFilter = function() {
-    console.log('----- Alphabet Filter Debug -----');
-    console.log('Current filters:', currentFilters);
-    console.log('Active letter:', $('.clm-alpha-link.active').data('letter'));
-    
-    // Check if the alphabet links have click handlers
-    const events = $._data($('.clm-alpha-link')[0], 'events') || {};
-    console.log('Events bound to alphabet links:', events);
-    
-    // Check global state
-    console.log('Current page:', currentPage);
-    console.log('Is loading:', isLoading);
-    
-    // Test a click manually
-    console.log('Testing click on letter A...');
-    $('.clm-alpha-link[data-letter="A"]').trigger('click');
-}
 
 Window.checkForPaginationConflict = function() {
     console.log('----- Checking for Pagination Conflict -----');
@@ -2699,4 +2586,6 @@ Window.checkForPaginationConflict = function() {
     const paginationFixStyle = $('#clm-essential-pagination-css');
     console.log('Pagination fix style exists:', paginationFixStyle.length > 0);
 }
+
+
 })(jQuery);

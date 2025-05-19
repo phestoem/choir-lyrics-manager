@@ -600,4 +600,227 @@ class CLM_Playlists {
         
         return $output;
     }
+	
+	
+		/**
+	 * Update a playlist's details
+	 *
+	 * @since    1.0.0
+	 */
+	public function update_playlist() {
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in to update playlists.', 'choir-lyrics-manager')));
+		}
+		
+		// Check nonce
+		if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_playlist_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
+		}
+		
+		// Check if playlist ID is provided
+		if (empty($_POST['playlist_id'])) {
+			wp_send_json_error(array('message' => __('Playlist ID is required.', 'choir-lyrics-manager')));
+		}
+		
+		$playlist_id = intval($_POST['playlist_id']);
+		
+		// Check if user has permission to modify this playlist
+		if (!$this->can_modify_playlist($playlist_id)) {
+			wp_send_json_error(array('message' => __('You do not have permission to modify this playlist.', 'choir-lyrics-manager')));
+		}
+		
+		// Update playlist data
+		$update_data = array(
+			'ID' => $playlist_id,
+		);
+		
+		if (!empty($_POST['playlist_name'])) {
+			$update_data['post_title'] = sanitize_text_field($_POST['playlist_name']);
+		}
+		
+		if (isset($_POST['playlist_description'])) {
+			$update_data['post_content'] = sanitize_textarea_field($_POST['playlist_description']);
+		}
+		
+		$playlist_id = wp_update_post($update_data);
+		
+		if (is_wp_error($playlist_id)) {
+			wp_send_json_error(array('message' => $playlist_id->get_error_message()));
+		}
+		
+		// Update visibility if provided
+		if (isset($_POST['playlist_visibility'])) {
+			$visibility = sanitize_text_field($_POST['playlist_visibility']);
+			update_post_meta($playlist_id, '_clm_playlist_visibility', $visibility);
+		}
+		
+		wp_send_json_success(array(
+			'message' => __('Playlist updated successfully.', 'choir-lyrics-manager')
+		));
+	}
+
+	/**
+	 * Reorder lyrics in a playlist
+	 *
+	 * @since    1.0.0
+	 */
+	public function reorder_playlist() {
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in to modify playlists.', 'choir-lyrics-manager')));
+		}
+		
+		// Check nonce
+		if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_playlist_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
+		}
+		
+		// Check if playlist ID and order are provided
+		if (empty($_POST['playlist_id']) || empty($_POST['lyric_order']) || !is_array($_POST['lyric_order'])) {
+			wp_send_json_error(array('message' => __('Playlist ID and lyric order are required.', 'choir-lyrics-manager')));
+		}
+		
+		$playlist_id = intval($_POST['playlist_id']);
+		$lyric_order = array_map('intval', $_POST['lyric_order']);
+		
+		// Check if user has permission to modify this playlist
+		if (!$this->can_modify_playlist($playlist_id)) {
+			wp_send_json_error(array('message' => __('You do not have permission to modify this playlist.', 'choir-lyrics-manager')));
+		}
+		
+		// Get current lyrics to verify all IDs exist
+		$current_lyrics = get_post_meta($playlist_id, '_clm_playlist_lyrics', true);
+		
+		if (!is_array($current_lyrics)) {
+			$current_lyrics = array();
+		}
+		
+		// Verify all lyrics in the new order exist in the current playlist
+		if (count(array_diff($lyric_order, $current_lyrics)) > 0 || count($lyric_order) !== count($current_lyrics)) {
+			wp_send_json_error(array('message' => __('Invalid lyric order.', 'choir-lyrics-manager')));
+		}
+		
+		// Update the playlist with the new order
+		update_post_meta($playlist_id, '_clm_playlist_lyrics', $lyric_order);
+		
+		wp_send_json_success(array(
+			'message' => __('Playlist order updated successfully.', 'choir-lyrics-manager')
+		));
+	}
+
+	/**
+	 * Get a single playlist with its lyrics
+	 *
+	 * @since     1.0.0
+	 * @param     int       $playlist_id    The playlist ID.
+	 * @return    array                     Array with playlist and lyrics data.
+	 */
+	public function get_playlist($playlist_id) {
+		$playlist = get_post($playlist_id);
+		
+		if (!$playlist || $playlist->post_type !== 'clm_playlist') {
+			return null;
+		}
+		
+		// Check visibility
+		$visibility = get_post_meta($playlist_id, '_clm_playlist_visibility', true);
+		$current_user_id = get_current_user_id();
+		
+		if ($visibility === 'private' && $playlist->post_author != $current_user_id && !current_user_can('administrator')) {
+			return null;
+		}
+		
+		$lyrics = $this->get_playlist_lyrics($playlist_id);
+		
+		return array(
+			'playlist' => $playlist,
+			'lyrics' => $lyrics,
+			'visibility' => $visibility,
+			'can_edit' => $this->can_modify_playlist($playlist_id)
+		);
+	}
+
+	/**
+	 * Delete a playlist
+	 *
+	 * @since    1.0.0
+	 */
+	public function delete_playlist() {
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in to delete playlists.', 'choir-lyrics-manager')));
+		}
+		
+		// Check nonce
+		if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_playlist_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
+		}
+		
+		// Check if playlist ID is provided
+		if (empty($_POST['playlist_id'])) {
+			wp_send_json_error(array('message' => __('Playlist ID is required.', 'choir-lyrics-manager')));
+		}
+		
+		$playlist_id = intval($_POST['playlist_id']);
+		
+		// Check if user has permission to delete this playlist
+		if (!$this->can_modify_playlist($playlist_id)) {
+			wp_send_json_error(array('message' => __('You do not have permission to delete this playlist.', 'choir-lyrics-manager')));
+		}
+		
+		// Delete the playlist
+		$result = wp_delete_post($playlist_id, true);
+		
+		if (!$result) {
+			wp_send_json_error(array('message' => __('Failed to delete playlist.', 'choir-lyrics-manager')));
+		}
+		
+		wp_send_json_success(array(
+			'message' => __('Playlist deleted successfully.', 'choir-lyrics-manager')
+		));
+	}
+
+	/**
+	 * Share a playlist
+	 *
+	 * @since    1.0.0
+	 */
+	public function share_playlist() {
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in to share playlists.', 'choir-lyrics-manager')));
+		}
+		
+		// Check nonce
+		if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'clm_playlist_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed.', 'choir-lyrics-manager')));
+		}
+		
+		// Check if playlist ID is provided
+		if (empty($_POST['playlist_id'])) {
+			wp_send_json_error(array('message' => __('Playlist ID is required.', 'choir-lyrics-manager')));
+		}
+		
+		$playlist_id = intval($_POST['playlist_id']);
+		
+		// Check if user has permission to modify this playlist
+		if (!$this->can_modify_playlist($playlist_id)) {
+			wp_send_json_error(array('message' => __('You do not have permission to share this playlist.', 'choir-lyrics-manager')));
+		}
+		
+		// Set playlist to public
+		update_post_meta($playlist_id, '_clm_playlist_visibility', 'public');
+		
+		// Generate a unique share URL
+		$share_url = get_permalink($playlist_id);
+		
+		wp_send_json_success(array(
+			'message' => __('Playlist shared successfully.', 'choir-lyrics-manager'),
+			'share_url' => $share_url
+		));
+	}
+	
+	
+	
 }

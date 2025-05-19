@@ -109,8 +109,7 @@ function run_choir_lyrics_manager() {
     }
     
     // Load the core plugin class
-    require_once CLM_PLUGIN_DIR . 'includes/class-choir-lyrics-manager.php';
-    require_once CLM_PLUGIN_DIR . 'includes/class-clm-pagination-fix.php';
+    require_once CLM_PLUGIN_DIR . 'includes/class-choir-lyrics-manager.php';    
     // Initialize the plugin
     $plugin = new Choir_Lyrics_Manager();
     $plugin->run();

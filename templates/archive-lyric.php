@@ -9,6 +9,13 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+// Debug template identification
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('Using template file: ' . __FILE__);
+}
+// At the very top of each potential template file
+error_log('Loading template file: ' . __FILE__);
+
 
 // Get settings
 $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
@@ -75,7 +82,47 @@ $current_page = get_query_var('paged') ? absint(get_query_var('paged')) : 1;
 
 get_header();
 ?>
-
+<?php
+// Debug output at the start of the template file
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    echo '<!-- BEGIN TEMPLATE DEBUG -->';
+    echo '<!-- Template file: ' . __FILE__ . ' -->';
+    
+    // Get global query
+    global $wp_query;
+    
+    // Debug current query
+    echo '<!-- Query found posts: ' . $wp_query->found_posts . ' -->';
+    echo '<!-- Current post type: ' . get_post_type() . ' -->';
+    
+    // Debug post meta for first post
+    if ($wp_query->have_posts()) {
+        while ($wp_query->have_posts()) {
+            $wp_query->the_post();
+            
+            $lyric_id = get_the_ID();
+            echo '<!-- Post ID: ' . $lyric_id . ' -->';
+            echo '<!-- Post title: ' . get_the_title() . ' -->';
+            
+            // Get attachment meta
+            $audio = get_post_meta($lyric_id, '_clm_audio_file_id', true);
+            $video = get_post_meta($lyric_id, '_clm_video_embed', true);
+            $sheet = get_post_meta($lyric_id, '_clm_sheet_music_id', true);
+            $midi = get_post_meta($lyric_id, '_clm_midi_file_id', true);
+            
+            echo '<!-- Audio: ' . (!empty($audio) ? $audio : 'empty') . ' -->';
+            echo '<!-- Video: ' . (!empty($video) ? 'has content' : 'empty') . ' -->';
+            echo '<!-- Sheet: ' . (!empty($sheet) ? $sheet : 'empty') . ' -->';
+            echo '<!-- MIDI: ' . (!empty($midi) ? $midi : 'empty') . ' -->';
+            
+            break; // Just check first post
+        }
+        rewind_posts(); // Reset for normal use
+    }
+    
+    echo '<!-- END TEMPLATE DEBUG -->';
+}
+?>
 <div class="clm-container clm-archive">
     <header class="clm-archive-header">
         <h1 class="clm-archive-title"><?php echo esc_html($archive_title); ?></h1>
@@ -259,7 +306,34 @@ get_header();
                         <p><?php _e('No difficulty levels available', 'choir-lyrics-manager'); ?></p>
                     <?php endif; ?>
                 </div>
-                
+                <!-- Media Type Filter -->
+				<div class="clm-filter-group">
+					<fieldset>
+						<legend><?php _e('Media Type', 'choir-lyrics-manager'); ?></legend>
+						<div class="clm-checkbox-group">
+							<label>
+								<input type="checkbox" name="has_audio" value="1" <?php checked(isset($_GET['has_audio'])); ?>> 
+								<span class="dashicons dashicons-format-audio"></span>
+								<?php _e('Audio', 'choir-lyrics-manager'); ?>
+							</label>
+							<label>
+								<input type="checkbox" name="has_video" value="1" <?php checked(isset($_GET['has_video'])); ?>> 
+								<span class="dashicons dashicons-format-video"></span>
+								<?php _e('Video', 'choir-lyrics-manager'); ?>
+							</label>
+							<label>
+								<input type="checkbox" name="has_sheet" value="1" <?php checked(isset($_GET['has_sheet'])); ?>> 
+								<span class="dashicons dashicons-media-document"></span>
+								<?php _e('Sheet Music', 'choir-lyrics-manager'); ?>
+							</label>
+							<label>
+								<input type="checkbox" name="has_midi" value="1" <?php checked(isset($_GET['has_midi'])); ?>> 
+								<span class="dashicons dashicons-playlist-audio"></span>
+								<?php _e('MIDI', 'choir-lyrics-manager'); ?>
+							</label>
+						</div>
+					</fieldset>
+				</div>
                 <!-- Sort Options -->
                 <div class="clm-filter-group">
                     <fieldset>
@@ -322,7 +396,28 @@ get_header();
     <div id="clm-results-container" data-current-page="<?php echo esc_attr($current_page); ?>">
         <?php if (have_posts()) : ?>
             <ul class="clm-items-list" id="clm-items-list">
-                <?php while (have_posts()) : the_post(); ?>
+                <?php while (have_posts()) : the_post(); 
+				error_log('Rendering post ID: ' . get_the_ID() . ' using template: ' . __FILE__);?>
+		<?php
+
+		 // Debug meta values
+    $lyric_id = get_the_ID();
+    error_log("Archive loop item: {$lyric_id}");
+    
+    // Check for attachments with direct logging
+    $audio_file_id = get_post_meta($lyric_id, '_clm_audio_file_id', true);
+    $video_embed = get_post_meta($lyric_id, '_clm_video_embed', true);
+    $sheet_music_id = get_post_meta($lyric_id, '_clm_sheet_music_id', true);
+    $midi_file_id = get_post_meta($lyric_id, '_clm_midi_file_id', true);
+    
+    error_log("Item {$lyric_id} attachments: audio=" . ($audio_file_id ? $audio_file_id : 'empty') . 
+              ", video=" . (!empty($video_embed) ? 'has content' : 'empty') . 
+              ", sheet=" . ($sheet_music_id ? $sheet_music_id : 'empty') . 
+              ", midi=" . ($midi_file_id ? $midi_file_id : 'empty'));
+			  ?>
+				
+				
+				
                     <li id="lyric-<?php the_ID(); ?>" class="clm-item clm-lyric-item" data-title="<?php echo esc_attr(get_the_title()); ?>">
                         <div class="clm-item-card">
                             <h2 class="clm-item-title">

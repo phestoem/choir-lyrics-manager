@@ -915,3 +915,277 @@ span.page-numbers.dots,
     cursor: pointer !important;
     pointer-events: auto !important;
 }
+
+/* Attachment Icons Styles */
+.clm-attachment-icons {
+    display: inline-flex;
+    margin-left: 10px;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.clm-attachment-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 5px;
+    background-color: #f8f9fa;
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.clm-attachment-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.clm-attachment-icon .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.clm-audio-icon {
+    color: #3498db;
+}
+
+.clm-video-icon {
+    color: #e74c3c;
+}
+
+.clm-sheet-icon {
+    color: #27ae60;
+}
+
+.clm-midi-icon {
+    color: #9b59b6;
+}
+
+/* Make sure the title works with the icons */
+.clm-item-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .clm-attachment-icons {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+    
+    .clm-item-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .clm-attachment-icon {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+/* Media Type Filter Checkboxes */
+.clm-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.clm-checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.clm-checkbox-group input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.clm-checkbox-group .dashicons {
+    margin-right: 3px;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Colors for the filter icons */
+.clm-checkbox-group label:has(input[name="has_audio"]:checked) .dashicons {
+    color: #3498db;
+}
+
+.clm-checkbox-group label:has(input[name="has_video"]:checked) .dashicons {
+    color: #e74c3c;
+}
+
+.clm-checkbox-group label:has(input[name="has_sheet"]:checked) .dashicons {
+    color: #27ae60;
+}
+
+.clm-checkbox-group label:has(input[name="has_midi"]:checked) .dashicons {
+    color: #9b59b6;
+}
+.clm-attachment-icon {
+    display: inline-flex !important;
+    width: 24px !important;
+    height: 24px !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Ensure attachments and icons display properly */
+.clm-attachment-icons {
+    display: inline-flex !important;
+    margin-left: 10px !important;
+    align-items: center !important;
+    vertical-align: middle !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.clm-attachment-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 5px !important;
+    border-radius: 50% !important;
+    position: relative !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure the title can accommodate the icons */
+.clm-item-title {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+}
+
+/* Responsive adjustment */
+@media (max-width: 480px) {
+    .clm-attachment-icons {
+        margin-left: 0 !important;
+        margin-top: 5px !important;
+    }
+    
+    .clm-item-title {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+}
+
+/* Add to the end of public.css */
+
+/* Fix for pagination links - ensure they're clickable */
+.clm-pagination a,
+.clm-shortcode-pagination a,
+.page-numbers a,
+a.page-numbers {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Fix for multiple highlighted "current" pages */
+.clm-page-link.clm-current,
+span.page-numbers.current,
+.clm-pagination span.current,
+.clm-shortcode-pagination span.current,
+ul.page-numbers span.current {
+    background-color: #007cba !important;
+    color: white !important;
+    border-color: #007cba !important;
+    font-weight: 600 !important;
+    pointer-events: none !important;
+}
+
+/* Remove problematic rule that causes multiple current buttons */
+body:not([class*="paged-"]) .page-numbers a:first-of-type,
+body.paged-1 .page-numbers a:first-of-type,
+body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
+body.paged-1 .clm-pagination-wrapper a:first-of-type {
+    background-color: white !important; 
+    color: #333 !important;
+    border-color: #ddd !important;
+    font-weight: normal !important;
+    pointer-events: auto !important;
+}
+/* Add to the end of public.css */
+
+/* Enhanced Attachment Icons Styles */
+.clm-attachment-icons {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-left: 10px !important;
+    align-items: center !important;
+    vertical-align: middle !important;
+    flex-wrap: nowrap !important;
+    pointer-events: auto !important;
+    z-index: 5 !important;
+    position: relative !important;
+}
+
+.clm-attachment-icon {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 5px !important;
+    border-radius: 50% !important;
+    position: relative !important;
+    z-index: 6 !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+}
+
+/* Make sure emoji content remains visible */
+.clm-attachment-icon::before,
+.clm-attachment-icon::after {
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 7 !important;
+}
+
+/* Ensure the title layout accommodates the icons */
+.clm-item-title {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+/* Force emoji content in case ::before/::after is being overridden */
+.clm-attachment-icon[data-icon="audio"]::after {
+    content: "🎵" !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
+.clm-attachment-icon[data-icon="video"]::after {
+    content: "🎬" !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
+.clm-attachment-icon[data-icon="sheet"]::after {
+    content: "📄" !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
+.clm-attachment-icon[data-icon="midi"]::after {
+    content: "🎹" !important;
+    visibility: visible !important;
+    display: inline !important;
+}

@@ -48,6 +48,9 @@ class CLM_Public {
         $this->version = $version;
         $this->settings = new CLM_Settings($plugin_name, $version);
 		$this->register_ajax_handlers();
+		
+		 // Add our attachment icons filter
+		add_filter('the_title', array($this, 'add_attachment_icons'), 10, 2);
     }
 
     /**
@@ -58,7 +61,69 @@ class CLM_Public {
     public function enqueue_styles() {
         wp_enqueue_style($this->plugin_name, CLM_PLUGIN_URL . 'assets/css/public.css', array(), $this->version, 'all');
         wp_add_inline_style($this->plugin_name, $this->settings->get_custom_css());
+		 // Ensure dashicons are loaded
+		wp_enqueue_style('dashicons');
     }
+
+
+/**
+ * Add attachment icons to lyric titles
+ *
+ * @param string $title The post title
+ * @param int $post_id The post ID
+ * @return string Modified title with icons
+ */
+public function add_attachment_icons($title, $post_id) {
+    // Only process lyric post types and only on the main site display (not admin, not in menus, etc.)
+    if (get_post_type($post_id) !== 'clm_lyric' || is_admin()) {
+        return $title;
+    }
+    
+    // Check for attachments
+    $audio_file_id = get_post_meta($post_id, '_clm_audio_file_id', true);
+    $video_embed = get_post_meta($post_id, '_clm_video_embed', true);
+    $sheet_music_id = get_post_meta($post_id, '_clm_sheet_music_id', true);
+    $midi_file_id = get_post_meta($post_id, '_clm_midi_file_id', true);
+    
+    // Check practice tracks as well
+    $practice_tracks = get_post_meta($post_id, '_clm_practice_tracks', true);
+    $has_practice_tracks = !empty($practice_tracks) && is_array($practice_tracks) && count($practice_tracks) > 0;
+    
+    // Determine which icons to show
+    $has_audio = (!empty($audio_file_id) && $audio_file_id !== '0') || $has_practice_tracks;
+    $has_video = !empty($video_embed);
+    $has_sheet = !empty($sheet_music_id) && $sheet_music_id !== '0';
+    $has_midi = !empty($midi_file_id) && $midi_file_id !== '0';
+    
+    // If no attachments, return unchanged title
+    if (!$has_audio && !$has_video && !$has_sheet && !$has_midi) {
+        return $title;
+    }
+    
+    // Build the icons HTML
+    $icons_html = '<span class="clm-attachment-icons" style="display: inline-flex; margin-left: 8px; align-items: center;">';
+    
+    if ($has_audio) {
+        $icons_html .= '<span class="clm-attachment-icon" title="Audio Available" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-right: 5px; background-color: #f0f7ff; border: 1px solid #d0e3ff; border-radius: 50%; color: #3498db; font-size: 14px;">🎵</span>';
+    }
+    
+    if ($has_video) {
+        $icons_html .= '<span class="clm-attachment-icon" title="Video Available" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-right: 5px; background-color: #fff0f0; border: 1px solid #ffd0d0; border-radius: 50%; color: #e74c3c; font-size: 14px;">🎬</span>';
+    }
+    
+    if ($has_sheet) {
+        $icons_html .= '<span class="clm-attachment-icon" title="Sheet Music Available" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-right: 5px; background-color: #f0fff5; border: 1px solid #d0ffd0; border-radius: 50%; color: #27ae60; font-size: 14px;">📄</span>';
+    }
+    
+    if ($has_midi) {
+        $icons_html .= '<span class="clm-attachment-icon" title="MIDI File Available" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-right: 5px; background-color: #f5f0ff; border: 1px solid #d0d0ff; border-radius: 50%; color: #9b59b6; font-size: 14px;">🎹</span>';
+    }
+    
+    $icons_html .= '</span>';
+    
+    // Return the title with icons appended
+    return $title . $icons_html;
+}
 
     /**
      * Register the JavaScript for the public-facing side of the site.
@@ -78,19 +143,18 @@ public function enqueue_scripts() {
 	error_log('Creating filter nonce with action "clm_filter_nonce": ' . $filter_nonce);
     error_log('CLM Nonce Generated: ' . $filter_nonce);
 	
-	 $all_nonces = array(
+	  $all_nonces = array(
         'practice' => wp_create_nonce('clm_practice_nonce'),
         'playlist' => wp_create_nonce('clm_playlist_nonce'),
         'search' => wp_create_nonce('clm_search_nonce'),
         'filter' => wp_create_nonce('clm_filter_nonce'),
-        'skills' => wp_create_nonce('clm_skills_nonce'), // Add skills nonce
-		'shortcode_filter' => wp_create_nonce('clm_shortcode_filter'), // Add this line
+        'skills' => wp_create_nonce('clm_skills_nonce'),
+        'shortcode_filter' => wp_create_nonce('clm_shortcode_filter')
     );
-	error_log('All nonces: ' . print_r($all_nonces, true));
 	
     wp_localize_script($this->plugin_name, 'clm_vars', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
-		'is_user_logged_in' => is_user_logged_in(),
+        'is_user_logged_in' => is_user_logged_in(),
         'nonce' => $all_nonces,
         'text' => array(
             'practice_success' => __('Practice logged successfully!', 'choir-lyrics-manager'),

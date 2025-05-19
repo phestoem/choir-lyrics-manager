@@ -2,635 +2,390 @@
 /**
  * AJAX Handlers Trait for CLM Plugin
  * Provides unified AJAX handling for public and admin
- *
- * @package Choir_Lyrics_Manager
  */
 
 trait CLM_Ajax_Handlers {
-    /**
-     * Register AJAX handlers
-     *
-     * @return void
-     */
-    public function register_ajax_handlers() {
-        // Search and filter handlers
-        add_action('wp_ajax_clm_ajax_search', [$this, 'handle_ajax_search']);
-        add_action('wp_ajax_nopriv_clm_ajax_search', [$this, 'handle_ajax_search']);
-        
-        add_action('wp_ajax_clm_ajax_filter', [$this, 'handle_ajax_filter']);
-        add_action('wp_ajax_nopriv_clm_ajax_filter', [$this, 'handle_ajax_filter']);
-		
-		add_action('wp_ajax_clm_alphabet_filter', [$this, 'handle_alphabet_filter']);
-        add_action('wp_ajax_nopriv_clm_alphabet_filter', [$this, 'handle_alphabet_filter']);
-        
-        add_action('wp_ajax_clm_shortcode_filter', [$this, 'handle_shortcode_filter']);
-        add_action('wp_ajax_nopriv_clm_shortcode_filter', [$this, 'handle_shortcode_filter']);
-        
-        // Only register these handlers in development environment
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            // Test nonce handler - useful for debugging
-            add_action('wp_ajax_clm_test_nonce', [$this, 'clm_test_nonce_handler']);
-            add_action('wp_ajax_nopriv_clm_test_nonce', [$this, 'clm_test_nonce_handler']);
-            
-            // Testing handler
-            add_action('wp_ajax_clm_ajax_filter_test', [$this, 'handle_ajax_filter_test']);
-            add_action('wp_ajax_nopriv_clm_ajax_filter_test', [$this, 'handle_ajax_filter_test']);
-        }
-    }
 
     /**
-     * Verify nonce with multiple possible actions
-     * 
-     * @param string $nonce The nonce to verify
-     * @param array $possible_actions Array of possible nonce actions
-     * @return bool Whether the nonce is valid
-     */
-    private function verify_multi_nonce($nonce, $possible_actions = []) {
-        if (empty($nonce)) {
-            return false;
-        }
-        
-        // Default nonce actions if none provided
-        if (empty($possible_actions)) {
-            $possible_actions = [
-                'clm_filter_nonce',
-                'clm_search_nonce',
-                'clm_practice_nonce',
-                'clm_playlist_nonce',
-                'clm_skills_nonce'
-            ];
-        }
-        
-        foreach ($possible_actions as $action) {
-            if (wp_verify_nonce($nonce, $action)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
      * Handle AJAX filter request
-     * 
-     * @return void
      */
     public function handle_ajax_filter() {
-        // Verify nonce
-        $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
-        if (!$this->verify_multi_nonce($nonce)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('CLM AJAX Filter: Nonce verification failed. Received nonce: ' . $nonce);
-            }
-            
-            wp_send_json_error([
-                'message' => __('Security verification failed. Please refresh the page and try again.', 'choir-lyrics-manager'),
-            ]);
+        // Unified nonce verification approach
+        $verified = false;
+        
+        // Try to verify nonce for both logged-in and non-logged-in users
+        if (isset($_POST['nonce'])) {
+            $nonce = sanitize_text_field($_POST['nonce']);
+            $verified = wp_verify_nonce($nonce, 'clm_filter_nonce');
+        }
+        
+        // Continue only if verified or if user is not logged in
+        if (!$verified && is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Security verification failed for logged-in user'));
             return;
         }
-        
-        // Get search query and filters
-        $search_query = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
-        $filters = isset($_POST['filters']) && is_array($_POST['filters']) ? $_POST['filters'] : [];
-        $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
-        
-        // Debug logging (only in debug mode)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('CLM Debug - Received filters: ' . print_r($filters, true));
-			if ($is_alphabet_filter) {
-				error_log('CLM Debug - Direct alphabet filter request detected');
-			}
+    
+        // For logged-in users, check nonce
+        if (is_user_logged_in()) {
+            if (!check_ajax_referer('clm_filter_nonce', 'nonce', false)) {
+                wp_send_json_error(array('message' => 'Security verification failed for logged-in user'));
+                return;
+            }
         }
-		
-		
-		// Special handling for alphabet filter
-		if ($is_alphabet_filter && isset($filters['starts_with']) && !empty($filters['starts_with'])) {
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Debug - Processing alphabet filter for letter: ' . $filters['starts_with']);
-			}
-		}
         
-        // Validate orderby and order parameters
-        $valid_orderby = ['title', 'date', 'modified', 'menu_order', 'rand'];
-        $valid_order = ['ASC', 'DESC'];
+        // Get request data
+        $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $filters = isset($_POST['filters']) ? $_POST['filters'] : array();
         
-        $orderby = isset($filters['orderby']) && in_array($filters['orderby'], $valid_orderby) 
-            ? sanitize_text_field($filters['orderby']) 
-            : 'title';
-            
-        $order = isset($filters['order']) && in_array(strtoupper($filters['order']), $valid_order) 
-            ? strtoupper(sanitize_text_field($filters['order'])) 
-            : 'ASC';
+        // Get per_page from filters or default
+        $per_page = isset($filters['per_page']) ? intval($filters['per_page']) : 20;
+        if ($per_page < 1) {
+            $per_page = 20;
+        }
         
-        // Prepare query args
-        $args = [
+        // Build query arguments
+        $args = array(
             'post_type' => 'clm_lyric',
-            'posts_per_page' => isset($filters['per_page']) ? absint($filters['per_page']) : 20,
+            'post_status' => 'publish',
             'paged' => $page,
-            'orderby' => $orderby,
-            'order' => $order,
-        ];
+            'posts_per_page' => isset($filters['per_page']) ? intval($filters['per_page']) : 10,
+        );
         
         // Add search query
-        if (!empty($search_query)) {
-            $args['s'] = $search_query;
+        if (!empty($search)) {
+            $args['s'] = $search;
         }
         
-        // Add taxonomy filters
-        $tax_query = [];
+        // Add orderby
+        if (!empty($filters['orderby'])) {
+            $args['orderby'] = $filters['orderby'];
+            $args['order'] = isset($filters['order']) ? $filters['order'] : 'ASC';
+        }
         
-        // Process taxonomy filters with sanitization
-        $taxonomies = ['genre', 'language', 'difficulty'];
-        foreach ($taxonomies as $taxonomy) {
-            if (!empty($filters[$taxonomy])) {
-                $tax_query[] = [
-                    'taxonomy' => 'clm_' . $taxonomy,
-                    'field' => 'slug',
-                    'terms' => sanitize_text_field($filters[$taxonomy]),
-                ];
-            }
+        // Add taxonomy queries
+        $tax_query = array();
+        
+        if (!empty($filters['genre'])) {
+            $tax_query[] = array(
+                'taxonomy' => 'clm_genre',
+                'field' => 'slug',
+                'terms' => $filters['genre'],
+            );
+        }
+        
+        if (!empty($filters['language'])) {
+            $tax_query[] = array(
+                'taxonomy' => 'clm_language',
+                'field' => 'slug',
+                'terms' => $filters['language'],
+            );
+        }
+        
+        if (!empty($filters['difficulty'])) {
+            $tax_query[] = array(
+                'taxonomy' => 'clm_difficulty',
+                'field' => 'slug',
+                'terms' => $filters['difficulty'],
+            );
         }
         
         if (!empty($tax_query)) {
             $args['tax_query'] = $tax_query;
         }
         
-       // Add alphabet filter - approach using posts_where
-		if (!empty($filters['starts_with']) && $filters['starts_with'] !== 'all') {
-			// Add our custom query var to the WP_Query
-			$args['starts_with'] = sanitize_text_field($filters['starts_with']);
-			
-			// Set up the posts_where filter
-			add_filter('posts_where', [$this, 'filter_posts_by_title_first_letter']);
-			
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Debug - Added alphabet filter for letter: ' . $filters['starts_with']);
-			}
-		}
-        
-        // Run query
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('CLM Debug - Running query with args: ' . print_r($args, true));
+        // Add alphabet filter
+        if (!empty($filters['starts_with']) && $filters['starts_with'] !== 'all') {
+            add_filter('posts_where', function($where) use ($filters) {
+                global $wpdb;
+                $where .= $wpdb->prepare(" AND {$wpdb->posts}.post_title LIKE %s", $filters['starts_with'] . '%');
+                return $where;
+            });
         }
         
+        // Execute query
         $query = new WP_Query($args);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('CLM Debug - Query SQL: ' . $query->request);
-        }
-        
-        // Remove the filter after query is complete
-        if (!empty($filters['starts_with']) && $filters['starts_with'] !== 'all') {
-            remove_filter('posts_where', [$this, 'filter_posts_by_title_first_letter']);
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('CLM Debug - Removed alphabet filter');
-            }
-        }
-        
-        // Get settings
-        $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
-        
-        // Generate HTML
+        // Generate HTML for items
         ob_start();
         if ($query->have_posts()) {
-            echo '<ul class="clm-items-list" id="clm-items-list">';
             while ($query->have_posts()) {
                 $query->the_post();
                 $this->render_lyric_item();
             }
-            echo '</ul>';
         } else {
-            ?>
-            <div class="clm-no-results">
-                <p class="clm-notice"><?php _e('No lyrics found matching your criteria.', 'choir-lyrics-manager'); ?></p>
-                <p><?php _e('Try adjusting your filters or search terms.', 'choir-lyrics-manager'); ?></p>
-            </div>
-            <?php
+            echo '<p class="clm-no-results">' . __('No lyrics found matching your criteria.', 'choir-lyrics-manager') . '</p>';
         }
         $html = ob_get_clean();
         
-        // Generate pagination
-        $pagination = $this->generate_enhanced_pagination($page, $query->max_num_pages);
+        // Generate pagination with current page
+        ob_start();
+        $this->render_ajax_pagination($query, $page);
+        $pagination = ob_get_clean();
         
         wp_reset_postdata();
         
-        wp_send_json_success([
+        // Send response
+        wp_send_json_success(array(
             'html' => $html,
             'pagination' => $pagination,
             'total' => $query->found_posts,
             'page' => $page,
             'max_pages' => $query->max_num_pages,
-            'new_nonce' => wp_create_nonce('clm_filter_nonce'),
-        ]);
+        ));
     }
-    
-    /**
-     * Simple test handler to help debug filter issues
-     * 
-     * @return void
-     */
-    public function handle_ajax_filter_test() {
-        $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
-        wp_send_json_success([
-            'message' => 'Test handler works!',
-            'nonce_received' => $nonce,
-        ]);
-    }
-    
-    /**
-     * Filter posts by the first letter of the title
-     *
-     * @param string $where The WHERE clause of the query
-     * @return string The modified WHERE clause
-     */
-		public function filter_posts_by_title_first_letter($where) {
-			global $wpdb, $wp_query;
-			
-			// Always log this call to help with debugging
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Filter: filter_posts_by_title_first_letter called');
-				
-				// Check where the filter is being applied from
-				$backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-				$caller = isset($backtrace[2]['function']) ? $backtrace[2]['function'] : 'unknown';
-				error_log('CLM Filter: Called from ' . $caller);
-			}
-			
-			// First check for direct filter from AJAX request (shortcode filter)
-			if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['starts_with']) && !empty($_POST['starts_with'])) {
-				$starts_with = strtoupper(sanitize_text_field($_POST['starts_with']));
-				
-				if ($starts_with !== 'ALL') {
-					$where .= $wpdb->prepare(" AND UPPER(SUBSTRING({$wpdb->posts}.post_title, 1, 1)) = %s", $starts_with);
-					
-					if (defined('WP_DEBUG') && WP_DEBUG) {
-						error_log('CLM Filter: Modified WHERE clause for letter (AJAX direct): ' . $starts_with);
-						error_log('CLM Filter: WHERE clause is now: ' . $where);
-					}
-				}
-				
-				return $where;
-			}
-			
-			// Check if our query var is set (WP_Query approach)
-			if (isset($wp_query->query_vars['starts_with']) && !empty($wp_query->query_vars['starts_with'])) {
-				$starts_with = strtoupper(sanitize_text_field($wp_query->query_vars['starts_with']));
-				
-				if ($starts_with !== 'ALL') {
-					// Add the filter condition to the WHERE clause
-					$where .= $wpdb->prepare(" AND UPPER(SUBSTRING({$wpdb->posts}.post_title, 1, 1)) = %s", $starts_with);
-					
-					if (defined('WP_DEBUG') && WP_DEBUG) {
-						error_log('CLM Filter: Modified WHERE clause for letter (query var): ' . $starts_with);
-						error_log('CLM Filter: WHERE clause is now: ' . $where);
-					}
-				}
-			}
-			
-			// Also check the global wp_query for current_post_query which may have been set by get_posts()
-			if (empty($wp_query->query_vars['starts_with']) && !empty($wp_query->query['starts_with'])) {
-				$starts_with = strtoupper(sanitize_text_field($wp_query->query['starts_with']));
-				
-				if ($starts_with !== 'ALL') {
-					$where .= $wpdb->prepare(" AND UPPER(SUBSTRING({$wpdb->posts}.post_title, 1, 1)) = %s", $starts_with);
-					
-					if (defined('WP_DEBUG') && WP_DEBUG) {
-						error_log('CLM Filter: Modified WHERE clause from query array: ' . $starts_with);
-						error_log('CLM Filter: WHERE clause is now: ' . $where);
-					}
-				}
-			}
-			
-			return $where;
-		}
-
-/**
- * Handle alphabet filter specifically
- */
-public function handle_alphabet_filter() {
-    // Verify nonce
-    $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
-    if (!$this->verify_multi_nonce($nonce)) {
-        wp_send_json_error(['message' => 'Security verification failed']);
-        return;
-    }
-    
-    $letter = isset($_POST['letter']) ? sanitize_text_field($_POST['letter']) : '';
-    if (empty($letter) || $letter === 'all') {
-        // For "all", just run normal search without the filter
-        $args = [
-            'post_type' => 'clm_lyric',
-            'posts_per_page' => isset($_POST['per_page']) ? absint($_POST['per_page']) : 20,
-            'paged' => 1,
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ];
-    } else {
-        // For specific letter
-        add_filter('posts_where', function($where) use ($letter) {
-            global $wpdb;
-            $where .= $wpdb->prepare(" AND UPPER(SUBSTRING({$wpdb->posts}.post_title, 1, 1)) = %s", strtoupper($letter));
-            error_log('CLM Debug - Direct alphabet filter SQL: ' . $where);
-            return $where;
-        });
-        
-        $args = [
-            'post_type' => 'clm_lyric',
-            'posts_per_page' => isset($_POST['per_page']) ? absint($_POST['per_page']) : 20,
-            'paged' => 1,
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ];
-    }
-    
-    // Run query
-    $query = new WP_Query($args);
-    
-    // Generate HTML
-    ob_start();
-    if ($query->have_posts()) {
-        echo '<ul class="clm-items-list" id="clm-items-list">';
-        while ($query->have_posts()) {
-            $query->the_post();
-            $this->render_lyric_item();
-        }
-        echo '</ul>';
-    } else {
-        ?>
-        <div class="clm-no-results">
-            <p class="clm-notice"><?php _e('No lyrics found matching your criteria.', 'choir-lyrics-manager'); ?></p>
-            <p><?php _e('Try adjusting your filters or search terms.', 'choir-lyrics-manager'); ?></p>
-        </div>
-        <?php
-    }
-    $html = ob_get_clean();
-    
-    // Generate pagination
-    $pagination = $this->generate_enhanced_pagination(1, $query->max_num_pages);
-    
-    wp_reset_postdata();
-    
-    wp_send_json_success([
-        'html' => $html,
-        'pagination' => $pagination,
-        'total' => $query->found_posts,
-        'page' => 1,
-        'max_pages' => $query->max_num_pages,
-        'new_nonce' => wp_create_nonce('clm_filter_nonce'),
-    ]);
-}
-
-
 
     /**
      * Handle AJAX search request
-     * 
-     * @return void
      */
     public function handle_ajax_search() {
-        // Verify nonce
-        $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
-        if (!$this->verify_multi_nonce($nonce)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('CLM AJAX Search: Nonce verification failed. Received nonce: ' . $nonce);
-            }
-            
-            wp_send_json_error([
-                'message' => __('Security verification failed. Please refresh the page and try again.', 'choir-lyrics-manager'),
-            ]);
+        if (!check_ajax_referer('clm_search_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Security verification failed'));
             return;
         }
         
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
         
         if (strlen($query) < 2) {
-            wp_send_json_error(['message' => __('Query too short', 'choir-lyrics-manager')]);
+            wp_send_json_error(array('message' => 'Query too short'));
             return;
         }
         
         // Search for lyrics
-        $args = [
+        $args = array(
             'post_type' => 'clm_lyric',
             'post_status' => 'publish',
             's' => $query,
             'posts_per_page' => 5,
-        ];
+        );
         
         $search_query = new WP_Query($args);
-        $suggestions = [];
+        $suggestions = array();
         
         if ($search_query->have_posts()) {
             while ($search_query->have_posts()) {
                 $search_query->the_post();
                 
-                $suggestions[] = [
+                $suggestions[] = array(
                     'id' => get_the_ID(),
                     'title' => get_the_title(),
                     'url' => get_permalink(),
                     'meta' => $this->get_lyric_meta_string(get_the_ID()),
-                ];
+                );
             }
         }
         
         wp_reset_postdata();
         
-        wp_send_json_success([
+        wp_send_json_success(array(
             'suggestions' => $suggestions,
-            'new_nonce' => wp_create_nonce('clm_search_nonce'),
-        ]);
+        ));
     }
 
     /**
-     * Handle shortcode filter request with enhanced ordering support
-     * 
-     * @return void
+     * Handle shortcode filter request with improved error handling
      */
-		 public function handle_shortcode_filter() {
-			// Get parameters from request with proper sanitization
-			$container_id = isset($_POST['container_id']) ? sanitize_text_field($_POST['container_id']) : '';
-			$page = isset($_POST['page']) ? absint($_POST['page']) : 1;
-			$search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
-			
-			// Get per_page parameter
-			$per_page = isset($_POST['per_page']) ? absint($_POST['per_page']) : 20;
-			
-			// Get ordering parameters with validation
-			$valid_orderby_values = ['title', 'date', 'modified', 'menu_order', 'ID', 'rand', 'comment_count'];
-			$valid_order_values = ['ASC', 'DESC'];
-			
-			$orderby = isset($_POST['orderby']) && in_array($_POST['orderby'], $valid_orderby_values) 
-				? sanitize_text_field($_POST['orderby']) 
-				: 'title';
-					
-			$order = isset($_POST['order']) && in_array(strtoupper($_POST['order']), $valid_order_values) 
-				? strtoupper(sanitize_text_field($_POST['order'])) 
-				: 'ASC';
-			
-			// Check for starts_with parameter (alphabet filtering)
-			$starts_with = isset($_POST['starts_with']) ? sanitize_text_field($_POST['starts_with']) : '';
-			
-			// Debug log
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Shortcode Filter Request: ' . print_r([
-					'orderby' => $orderby,
-					'order' => $order,
-					'per_page' => $per_page,
-					'page' => $page,
-					'starts_with' => $starts_with
-				], true));
-			}
-			
-			// Build query arguments
-			$args = [
-				'post_type' => 'clm_lyric',
-				'post_status' => 'publish',
-				'paged' => $page,
-				'posts_per_page' => $per_page,
-				'orderby' => $orderby,
-				'order' => $order,
-			];
-			
-			// Add search query
-			if (!empty($search)) {
-				$args['s'] = $search;
-			}
-			
-			// Add taxonomy filters
-			$tax_query = [];
-			
-			// Process all taxonomy filters
-			foreach ($_POST as $key => $value) {
-				if (strpos($key, 'filter_') === 0 && !empty($value)) {
-					$filter_key = str_replace('filter_', '', $key);
-					$value = sanitize_text_field($value);
-					
-					switch ($filter_key) {
-						case 'genre':
-						case 'language':
-						case 'difficulty':
-							$tax_query[] = [
-								'taxonomy' => 'clm_' . $filter_key,
-								'field' => 'slug',
-								'terms' => $value,
-							];
-							break;
-					}
-				}
-			}
-			
-			// Also check for direct filter parameters (non-prefixed)
-			foreach (['genre', 'language', 'difficulty'] as $taxonomy) {
-				if (isset($_POST[$taxonomy]) && !empty($_POST[$taxonomy])) {
-					$tax_query[] = [
-						'taxonomy' => 'clm_' . $taxonomy,
-						'field' => 'slug',
-						'terms' => sanitize_text_field($_POST[$taxonomy]),
-					];
-				}
-			}
-			
-			if (!empty($tax_query)) {
-				$args['tax_query'] = $tax_query;
-			}
-			
-			// Add alphabet filter if specified
-			if (!empty($starts_with) && $starts_with !== 'all') {
-				// Store starts_with in query vars
-				$args['starts_with'] = $starts_with;
-				
-				// Add filter to modify WHERE clause
-				add_filter('posts_where', [$this, 'filter_posts_by_title_first_letter']);
-				
-				if (defined('WP_DEBUG') && WP_DEBUG) {
-					error_log('CLM Shortcode Filter: Added alphabet filter for letter: ' . $starts_with);
-				}
-			}
-			
-			// Log the final query arguments
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Shortcode Filter Final Query Args: ' . print_r($args, true));
-			}
-			
-			// Execute query
-			$query = new WP_Query($args);
-			
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('CLM Shortcode Filter SQL: ' . $query->request);
-			}
-			
-			// Remove filter if added
-			if (!empty($starts_with) && $starts_with !== 'all') {
-				remove_filter('posts_where', [$this, 'filter_posts_by_title_first_letter']);
-				
-				if (defined('WP_DEBUG') && WP_DEBUG) {
-					error_log('CLM Shortcode Filter: Removed alphabet filter');
-				}
-			}
-			
-			// Generate HTML for results
-			ob_start();
-			include_once(CLM_PLUGIN_DIR . 'templates/partials/lyric-item-shortcode.php');
-			$html = ob_get_clean();
-			
-			// Generate pagination HTML
-			$pagination = $this->generate_enhanced_pagination($page, $query->max_num_pages);
-			
-			// Reset postdata
-			wp_reset_postdata();
-			
-			// Create fresh nonce for security
-			$new_nonce = wp_create_nonce('clm_filter_nonce');
-			
-			// Send the response
-			wp_send_json_success([
-				'html' => $html,
-				'pagination' => $pagination,
-				'total' => $query->found_posts,
-				'page' => $page,
-				'max_pages' => $query->max_num_pages,
-				'per_page' => $per_page,
-				'orderby' => $orderby,
-				'order' => $order,
-				'starts_with' => $starts_with, // Return the letter used for filtering
-				'new_nonce' => $new_nonce,
-				'sql' => defined('WP_DEBUG') && WP_DEBUG ? $query->request : '',
-			]);
-		}
-    
-    /**
-     * Add this utility function to help with ordering debugging if needed
-     * 
-     * @return void
-     */
-    public function log_query_vars() {
-        // Only run in admin or for logged-in users to avoid performance issues
-        if ((is_admin() || is_user_logged_in()) && defined('WP_DEBUG') && WP_DEBUG) {
-            global $wp_query;
-            $query_vars = $wp_query->query_vars;
+    public function handle_shortcode_filter() {
+        try {
+            // Verify nonce
+            if (!check_ajax_referer('clm_filter_nonce', 'nonce', false) && is_user_logged_in()) {
+                wp_send_json_error(array('message' => 'Security verification failed'));
+                return;
+            }
             
-            // Log relevant query vars
-            error_log('CLM Query Vars: ' . print_r([
-                'orderby' => isset($query_vars['orderby']) ? $query_vars['orderby'] : 'default',
-                'order' => isset($query_vars['order']) ? $query_vars['order'] : 'default',
-                'post_type' => isset($query_vars['post_type']) ? $query_vars['post_type'] : 'default',
-                'posts_per_page' => isset($query_vars['posts_per_page']) ? $query_vars['posts_per_page'] : 'default',
-            ], true));
+            // Get essential parameters
+            $container_id = isset($_POST['container_id']) ? sanitize_text_field($_POST['container_id']) : '';
+            $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+            $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 20;
+            
+            // Build query arguments
+            $args = array(
+                'post_type' => 'clm_lyric',
+                'post_status' => 'publish',
+                'paged' => $page,
+                'posts_per_page' => $per_page,
+            );
+            
+            // Add search query if present
+            if (isset($_POST['search']) && !empty($_POST['search'])) {
+                $args['s'] = sanitize_text_field($_POST['search']);
+            }
+            
+            // Add ordering
+            if (isset($_POST['orderby']) && !empty($_POST['orderby'])) {
+                $args['orderby'] = sanitize_text_field($_POST['orderby']);
+                
+                if (isset($_POST['order']) && !empty($_POST['order'])) {
+                    $args['order'] = sanitize_text_field($_POST['order']);
+                }
+            }
+            
+            // Process taxonomy filters
+            $tax_query = array();
+            
+            if (isset($_POST['genre']) && !empty($_POST['genre'])) {
+                $tax_query[] = array(
+                    'taxonomy' => 'clm_genre',
+                    'field' => 'slug',
+                    'terms' => sanitize_text_field($_POST['genre']),
+                );
+            }
+            
+            if (isset($_POST['language']) && !empty($_POST['language'])) {
+                $tax_query[] = array(
+                    'taxonomy' => 'clm_language',
+                    'field' => 'slug',
+                    'terms' => sanitize_text_field($_POST['language']),
+                );
+            }
+            
+            if (isset($_POST['difficulty']) && !empty($_POST['difficulty'])) {
+                $tax_query[] = array(
+                    'taxonomy' => 'clm_difficulty',
+                    'field' => 'slug',
+                    'terms' => sanitize_text_field($_POST['difficulty']),
+                );
+            }
+            
+            if (!empty($tax_query)) {
+                $args['tax_query'] = $tax_query;
+            }
+            
+            // Handle alphabet filter (starts_with)
+            if (isset($_POST['starts_with']) && !empty($_POST['starts_with']) && $_POST['starts_with'] !== 'all') {
+                add_filter('posts_where', function($where) {
+                    global $wpdb;
+                    $where .= $wpdb->prepare(" AND {$wpdb->posts}.post_title LIKE %s", 
+                        sanitize_text_field($_POST['starts_with']) . '%');
+                    return $where;
+                });
+            }
+            
+            // Execute query
+            $query = new WP_Query($args);
+            
+            // Generate HTML
+            ob_start();
+            if ($query->have_posts()) {
+                echo '<ul class="clm-items-list">';
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    include(plugin_dir_path(dirname(__FILE__)) . 'templates/partials/lyric-item-shortcode.php');
+                }
+                echo '</ul>';
+            } else {
+                echo '<div class="clm-no-results">';
+                echo '<p class="clm-notice">' . __("No lyrics found matching your criteria.", "choir-lyrics-manager") . '</p>';
+                echo '</div>';
+            }
+            $html = ob_get_clean();
+            
+            wp_reset_postdata();
+            
+            // Generate pagination
+            ob_start();
+            
+            if ($query->max_num_pages > 1) {
+                echo paginate_links(array(
+                    'base' => '#',
+                    'format' => '?paged=%#%',
+                    'current' => $page,
+                    'total' => $query->max_num_pages,
+                    'prev_text' => '<span class="dashicons dashicons-arrow-left-alt2"></span> ' . __('Previous', 'choir-lyrics-manager'),
+                    'next_text' => __('Next', 'choir-lyrics-manager') . ' <span class="dashicons dashicons-arrow-right-alt2"></span>',
+                    'type' => 'list',
+                    'end_size' => 1,
+                    'mid_size' => 2,
+                ));
+            }
+            
+            $pagination = ob_get_clean();
+            
+            // Send success response
+            wp_send_json_success(array(
+                'html' => $html,
+                'pagination' => $pagination,
+                'total' => $query->found_posts,
+                'page' => $page,
+                'max_pages' => $query->max_num_pages,
+            ));
+            
+        } catch (Exception $e) {
+            // Log the error
+            error_log('Shortcode filter error: ' . $e->getMessage());
+            
+            // Send error response
+            wp_send_json_error(array(
+                'message' => 'An error occurred: ' . $e->getMessage(),
+            ));
         }
     }
-    
+
     /**
      * Render a single lyric item
      * 
      * @return void
      */
     private function render_lyric_item() {
-        $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
+        // Get lyric ID
+        $lyric_id = get_the_ID();
+        
+        // Get attachment meta values
+        $audio_file_id = get_post_meta($lyric_id, '_clm_audio_file_id', true);
+        $video_embed = get_post_meta($lyric_id, '_clm_video_embed', true);
+        $sheet_music_id = get_post_meta($lyric_id, '_clm_sheet_music_id', true);
+        $midi_file_id = get_post_meta($lyric_id, '_clm_midi_file_id', true);
+        
+        // Check for existence with stringent checks
+        $has_audio = !empty($audio_file_id) && $audio_file_id !== '0' && $audio_file_id !== '';
+        $has_video = !empty($video_embed);
+        $has_sheet = !empty($sheet_music_id) && $sheet_music_id !== '0' && $sheet_music_id !== '';
+        $has_midi = !empty($midi_file_id) && $midi_file_id !== '0' && $midi_file_id !== '';
+        
+        // Check for practice tracks as well
+        $practice_tracks = get_post_meta($lyric_id, '_clm_practice_tracks', true);
+        $has_practice_tracks = !empty($practice_tracks) && is_array($practice_tracks) && count($practice_tracks) > 0;
+        if ($has_practice_tracks) {
+            $has_audio = true; // Consider practice tracks as audio
+        }
+        
+        // Flag for any attachments
+        $has_attachments = ($has_audio || $has_video || $has_sheet || $has_midi);
+        
+        // Start HTML output
         ?>
-        <li id="lyric-<?php the_ID(); ?>" class="clm-item clm-lyric-item" data-title="<?php echo esc_attr(get_the_title()); ?>">
+        <li id="lyric-<?php echo esc_attr($lyric_id); ?>" class="clm-item clm-lyric-item" data-title="<?php echo esc_attr(get_the_title()); ?>">
             <div class="clm-item-card">
                 <h2 class="clm-item-title">
                     <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                    
+                    <?php if ($has_attachments): ?>
+                    <div class="clm-attachment-icons">
+                        <?php if ($has_audio): ?>
+                        <span class="clm-attachment-icon audio-icon" title="<?php esc_attr_e('Audio Available', 'choir-lyrics-manager'); ?>">
+                            <span>🎵</span>
+                        </span>
+                        <?php endif; ?>
+                        
+                        <?php if ($has_video): ?>
+                        <span class="clm-attachment-icon video-icon" title="<?php esc_attr_e('Video Available', 'choir-lyrics-manager'); ?>">
+                            <span>🎬</span>
+                        </span>
+                        <?php endif; ?>
+                        
+                        <?php if ($has_sheet): ?>
+                        <span class="clm-attachment-icon sheet-icon" title="<?php esc_attr_e('Sheet Music Available', 'choir-lyrics-manager'); ?>">
+                            <span>📄</span>
+                        </span>
+                        <?php endif; ?>
+                        
+                        <?php if ($has_midi): ?>
+                        <span class="clm-attachment-icon midi-icon" title="<?php esc_attr_e('MIDI File Available', 'choir-lyrics-manager'); ?>">
+                            <span>🎹</span>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                 </h2>
                 
                 <div class="clm-item-meta">
@@ -651,6 +406,7 @@ public function handle_alphabet_filter() {
                     }
                     
                     // Check if difficulty display is enabled
+                    $settings = new CLM_Settings('choir-lyrics-manager', CLM_VERSION);
                     if ($settings->get_setting('show_difficulty', true)) {
                         $difficulty_terms = get_the_terms(get_the_ID(), 'clm_difficulty');
                         if (!is_wp_error($difficulty_terms) && !empty($difficulty_terms)) {
@@ -684,7 +440,7 @@ public function handle_alphabet_filter() {
                     <a href="<?php the_permalink(); ?>" class="clm-button"><?php esc_html_e('View Lyric', 'choir-lyrics-manager'); ?></a>
                     
                     <?php if (is_user_logged_in()): ?>
-                        <button class="clm-button clm-create-playlist-button" data-lyric-id="<?php echo esc_attr(get_the_ID()); ?>">
+                        <button class="clm-create-playlist-button" data-lyric-id="<?php echo esc_attr(get_the_ID()); ?>">
                             <?php esc_html_e('Create Playlist', 'choir-lyrics-manager'); ?>
                         </button>
                         
@@ -739,165 +495,125 @@ public function handle_alphabet_filter() {
         <?php
     }
 
-	/**
-	 * Generate enhanced pagination HTML
-	 * 
-	 * @param int $current_page Current page number
-	 * @param int $total_pages Total number of pages
-	 * @param string $base Base URL for pagination
-	 * @return string HTML pagination markup
-	 */
-	public function generate_enhanced_pagination($current_page, $total_pages, $base = '#') {
-		if ($total_pages <= 1) {
-			return '';
-		}
-		
-		ob_start();
-		?>
-		<div class="clm-pagination-wrapper">
-			<?php
-			// Previous button
-			if ($current_page > 1) : ?>
-				<a class="clm-page-link clm-prev" href="<?php echo esc_url($base); ?>" data-page="<?php echo $current_page - 1; ?>">
-					<span class="dashicons dashicons-arrow-left-alt2"></span> <?php _e('Previous', 'choir-lyrics-manager'); ?>
-				</a>
-			<?php else : ?>
-				<span class="clm-page-link clm-prev disabled">
-					<span class="dashicons dashicons-arrow-left-alt2"></span> <?php _e('Previous', 'choir-lyrics-manager'); ?>
-				</span>
-			<?php endif; ?>
-			
-			<?php
-			// Calculate page numbers to show
-			$start_page = max(1, $current_page - 2);
-			$end_page = min($total_pages, $current_page + 2);
-			
-			// Show first page if not in range
-			if ($start_page > 1) {
-				echo '<a class="clm-page-link" href="' . esc_url($base) . '" data-page="1">1</a>';
-				if ($start_page > 2) {
-					echo '<span class="clm-page-link clm-dots">...</span>';
-				}
-			}
-			
-			// Page numbers
-			for ($i = $start_page; $i <= $end_page; $i++) {
-				if ($i == $current_page) {
-					echo '<span class="clm-page-link clm-current">' . $i . '</span>';
-				} else {
-					echo '<a class="clm-page-link" href="' . esc_url($base) . '" data-page="' . $i . '">' . $i . '</a>';
-				}
-			}
-			
-			// Show last page if not in range
-			if ($end_page < $total_pages) {
-				if ($end_page < $total_pages - 1) {
-					echo '<span class="clm-page-link clm-dots">...</span>';
-				}
-				echo '<a class="clm-page-link" href="' . esc_url($base) . '" data-page="' . $total_pages . '">' . $total_pages . '</a>';
-			}
-			
-			// Next button
-			if ($current_page < $total_pages) : ?>
-				<a class="clm-page-link clm-next" href="<?php echo esc_url($base); ?>" data-page="<?php echo $current_page + 1; ?>">
-					<?php _e('Next', 'choir-lyrics-manager'); ?> <span class="dashicons dashicons-arrow-right-alt2"></span>
-				</a>
-			<?php else : ?>
-				<span class="clm-page-link clm-next disabled">
-					<?php _e('Next', 'choir-lyrics-manager'); ?> <span class="dashicons dashicons-arrow-right-alt2"></span>
-				</span>
-			<?php endif; ?>
-		</div>
-		
-		<div class="clm-page-jump">
-			<label for="clm-page-jump-input-<?php echo esc_attr(uniqid()); ?>"><?php _e('Jump to page:', 'choir-lyrics-manager'); ?></label>
-			<input type="number" 
-				   id="clm-page-jump-input-<?php echo esc_attr(uniqid()); ?>"
-				   class="clm-page-jump-input"
-				   min="1" 
-				   max="<?php echo esc_attr($total_pages); ?>" 
-				   value="<?php echo esc_attr($current_page); ?>">
-			<button type="button" class="clm-page-jump-button clm-go-button"><?php _e('Go', 'choir-lyrics-manager'); ?></button>
-		</div>
-		<?php
-		
-		return ob_get_clean();
-	}
+    /**
+     * Render AJAX pagination
+     */
+    private function render_ajax_pagination($query, $current_page = 1) {
+        if ($query->max_num_pages <= 1) {
+            return;
+        }
+        
+        ?>
+        <ul class="page-numbers">
+            <?php
+            // Previous link
+            if ($current_page > 1) {
+                $prev_page = $current_page - 1;
+                ?>
+                <li>
+                    <a href="#" class="prev page-numbers" data-page="<?php echo $prev_page; ?>">
+                        <span class="dashicons dashicons-arrow-left-alt2"></span> 
+                        <?php _e('Previous', 'choir-lyrics-manager'); ?>
+                    </a>
+                </li>
+                <?php
+            }
+            
+            // First page
+            if ($current_page > 3) {
+                ?>
+                <li><a href="#" class="page-numbers" data-page="1">1</a></li>
+                <?php
+                if ($current_page > 4) {
+                    echo '<li><span class="page-numbers dots">...</span></li>';
+                }
+            }
+            
+            // Pages around current
+            for ($i = max(1, $current_page - 2); $i <= min($query->max_num_pages, $current_page + 2); $i++) {
+                if ($i == $current_page) {
+                    ?>
+                    <li><span aria-current="page" class="page-numbers current"><?php echo $i; ?></span></li>
+                    <?php
+                } else {
+                    ?>
+                    <li><a href="#" class="page-numbers" data-page="<?php echo $i; ?>"><?php echo $i; ?></a></li>
+                    <?php
+                }
+            }
+            
+            // Last page
+            if ($current_page < $query->max_num_pages - 2) {
+                if ($current_page < $query->max_num_pages - 3) {
+                    echo '<li><span class="page-numbers dots">...</span></li>';
+                }
+                ?>
+                <li>
+                    <a href="#" class="page-numbers" data-page="<?php echo $query->max_num_pages; ?>">
+                        <?php echo $query->max_num_pages; ?>
+                    </a>
+                </li>
+                <?php
+            }
+            
+            // Next link
+            if ($current_page < $query->max_num_pages) {
+                $next_page = $current_page + 1;
+                ?>
+                <li>
+                    <a href="#" class="next page-numbers" data-page="<?php echo $next_page; ?>">
+                        <?php _e('Next', 'choir-lyrics-manager'); ?> 
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                    </a>
+                </li>
+                <?php
+            }
+            ?>
+        </ul>
+        
+        <div class="clm-page-jump">
+            <label><?php _e('Jump to page:', 'choir-lyrics-manager'); ?></label>
+            <input type="number" id="clm-page-jump-input" min="1" max="<?php echo $query->max_num_pages; ?>" value="<?php echo $current_page; ?>">
+            <button id="clm-page-jump-button" class="clm-button-small"><?php _e('Go', 'choir-lyrics-manager'); ?></button>
+        </div>
+        <?php
+    }
 
     /**
      * Get lyric meta string
-     *
-     * @param int $lyric_id ID of the lyric post
-     * @return string Formatted meta string
      */
     private function get_lyric_meta_string($lyric_id) {
-        $meta_parts = [];
+        $meta_parts = array();
         
-        // Get composer info
         $composer = get_post_meta($lyric_id, '_clm_composer', true);
-        if (!empty($composer)) {
-            $meta_parts[] = esc_html($composer);
+        if ($composer) {
+            $meta_parts[] = $composer;
         }
         
-        // Get language from taxonomy if available
-        $language_terms = get_the_terms($lyric_id, 'clm_language');
-        if (!is_wp_error($language_terms) && !empty($language_terms)) {
-            $meta_parts[] = esc_html($language_terms[0]->name);
-        } else {
-            // Fallback to meta field
-            $language = get_post_meta($lyric_id, '_clm_language', true);
-            if (!empty($language)) {
-                $meta_parts[] = esc_html($language);
-            }
+        $language = get_post_meta($lyric_id, '_clm_language', true);
+        if ($language) {
+            $meta_parts[] = $language;
         }
         
         return implode(' • ', $meta_parts);
     }
 
     /**
-     * Test nonce handler - useful for debugging
-     * 
-     * @return void
-     */
-    public function clm_test_nonce_handler() {
-        $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
-        
-        $verify_result = wp_verify_nonce($nonce, 'clm_filter_nonce');
-        $ajax_check = check_ajax_referer('clm_filter_nonce', 'nonce', false);
-        
-        $fresh_nonce = wp_create_nonce('clm_filter_nonce');
-        
-        wp_send_json_success([
-            'received_nonce' => $nonce,
-            'fresh_nonce' => $fresh_nonce,
-            'verify_result' => $verify_result,
-            'ajax_check' => $ajax_check,
-            'user_logged_in' => is_user_logged_in(),
-            'user_id' => get_current_user_id(),
-            'nonces_match' => ($nonce === $fresh_nonce),
-            'session_token' => wp_get_session_token(),
-        ]);
-    }
-    
-    /**
-     * Handle export event to calendar format
-     * 
-     * @return void
+     * Export event to calendar format
      */
     public function handle_export_event() {
         if (!isset($_GET['event_id']) || !isset($_GET['format'])) {
-            wp_die(__('Invalid request', 'choir-lyrics-manager'));
+            wp_die('Invalid request');
         }
         
-        $event_id = absint($_GET['event_id']);
+        $event_id = intval($_GET['event_id']);
         $format = sanitize_text_field($_GET['format']);
         
         $event = get_post($event_id);
         if (!$event || $event->post_type !== 'clm_event') {
-            wp_die(__('Invalid event', 'choir-lyrics-manager'));
+            wp_die('Invalid event');
         }
         
-        // Get event details
         $event_date = get_post_meta($event_id, '_clm_event_date', true);
         $event_time = get_post_meta($event_id, '_clm_event_time', true);
         $event_end_time = get_post_meta($event_id, '_clm_event_end_time', true);
@@ -911,27 +627,27 @@ public function handle_alphabet_filter() {
             $ics .= "VERSION:2.0\r\n";
             $ics .= "PRODID:-//Choir Lyrics Manager//NONSGML v1.0//EN\r\n";
             $ics .= "BEGIN:VEVENT\r\n";
-            $ics .= "UID:" . md5(uniqid(mt_rand(), true)) . "@" . sanitize_text_field($_SERVER['HTTP_HOST']) . "\r\n";
-            $ics .= "DTSTAMP:" . gmdate('Ymd\THis\Z') . "\r\n";
+            $ics .= "UID:" . md5(uniqid(mt_rand(), true)) . "@" . $_SERVER['HTTP_HOST'] . "\r\n";
+            $ics .= "DTSTAMP:" . date('Ymd\THis\Z') . "\r\n";
             
             if ($event_date && $event_time) {
-                $start_datetime = gmdate('Ymd\THis\Z', strtotime($event_date . ' ' . $event_time));
+                $start_datetime = date('Ymd\THis', strtotime($event_date . ' ' . $event_time));
                 $ics .= "DTSTART:" . $start_datetime . "\r\n";
                 
                 if ($event_end_time) {
-                    $end_datetime = gmdate('Ymd\THis\Z', strtotime($event_date . ' ' . $event_end_time));
+                    $end_datetime = date('Ymd\THis', strtotime($event_date . ' ' . $event_end_time));
                     $ics .= "DTEND:" . $end_datetime . "\r\n";
                 }
             }
             
             $ics .= "SUMMARY:" . $this->escape_ics_text($event->post_title) . "\r\n";
-            $ics .= "DESCRIPTION:" . $this->escape_ics_text(wp_strip_all_tags($event->post_content)) . "\r\n";
+            $ics .= "DESCRIPTION:" . $this->escape_ics_text(strip_tags($event->post_content)) . "\r\n";
             
             if ($event_location) {
                 $ics .= "LOCATION:" . $this->escape_ics_text($event_location) . "\r\n";
             }
             
-            $ics .= "URL:" . esc_url(get_permalink($event_id)) . "\r\n";
+            $ics .= "URL:" . get_permalink($event_id) . "\r\n";
             $ics .= "END:VEVENT\r\n";
             $ics .= "END:VCALENDAR\r\n";
             
@@ -939,15 +655,8 @@ public function handle_alphabet_filter() {
             exit;
         }
     }
-    
-    /**
-     * Escape text for ICS format
-     * 
-     * @param string $text Text to escape
-     * @return string Escaped text
-     */
+
     private function escape_ics_text($text) {
-        $text = str_replace('\\', '\\\\', $text); // Escape backslashes first
         $text = str_replace(',', '\,', $text);
         $text = str_replace(';', '\;', $text);
         $text = str_replace("\n", '\n', $text);
