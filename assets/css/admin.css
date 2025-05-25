@@ -399,3 +399,311 @@
 .clm-notice.warning {
     border-color: #ffb900;
 }
+/* In assets/css/admin.css */
+#adminmenu .wp-submenu .clm-menu-section-header>a,
+#adminmenu .wp-submenu .clm-menu-section-header>.wp-submenu-head {
+    font-style: italic !important;
+    color: #c3c4c6 !important;
+    /* Lighter grey for header text */
+    font-size: 11px !important;
+    padding-top: 10px !important;
+    /* Add some space above header */
+    padding-bottom: 2px !important;
+    cursor: default !important;
+    pointer-events: none;
+    /* Make it truly unclickable */
+}
+
+#adminmenu .wp-submenu .clm-menu-section-header:hover>a {
+    color: #c3c4c6 !important;
+    /* Prevent hover color change */
+}
+
+/* In your admin CSS file (e.g., assets/css/admin.css or a new assets/css/skills-dashboard.css) */
+
+/* Styles for the page rendered by templates/member-dashboard/skills.php */
+/* The .wrap class is standard for WordPress admin pages */
+
+.clm-member-skills-dashboard h1,
+.clm-member-skills-dashboard h3 {
+    /* Standardize heading margins */
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.clm-member-skills-dashboard h1 {
+    font-size: 23px;
+}
+
+/* Standard WP admin H1 size */
+.clm-member-skills-dashboard h3 {
+    font-size: 1.2em;
+}
+
+/* Skills Overview Section */
+.clm-skills-overview {
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.clm-skill-stats {
+    /* Container for the stat boxes (novice, learning, etc.) */
+    display: flex;
+    /* Changed to flex for better wrapping */
+    flex-wrap: wrap;
+    gap: 15px;
+    /* Spacing between stat boxes */
+}
+
+.clm-skill-stat-box {
+    background: #f9f9f9;
+    /* Lighter background for boxes */
+    border-left: 4px solid;
+    /* Color will be set by inline style */
+    border-radius: 4px;
+    padding: 15px;
+    flex: 1 1 180px;
+    /* Allow boxes to grow and shrink, with a base size */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.clm-skill-stat-box .dashicons {
+    font-size: 28px;
+    /* Slightly smaller icons */
+    width: 28px;
+    height: 28px;
+}
+
+.clm-skill-stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.clm-skill-count {
+    font-size: 1.8em;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.clm-skill-label {
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Skills Grid Section (My Song Skills) */
+.clm-skills-grid-container {
+    margin-top: 20px;
+}
+
+.clm-skills-filter-form {
+    /* Wrap selects in a form for better structure */
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.clm-skills-filter-form label {
+    /* Optional labels for selects */
+    margin-right: 5px;
+    font-weight: 600;
+}
+
+.clm-skills-filter-form select {
+    min-width: 180px;
+    /* Give selects some width */
+}
+
+.clm-skills-list {
+    /* Container for individual song skill cards */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    /* Responsive grid */
+    gap: 20px;
+}
+
+.clm-skill-item {
+    /* Individual song skill card */
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 15px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    display: flex;
+    flex-direction: column;
+}
+
+.clm-skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    /* Align title top, badge top */
+    margin-bottom: 10px;
+}
+
+.clm-skill-header h4 {
+    /* Song Title */
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    flex-grow: 1;
+    /* Allow title to take space */
+}
+
+.clm-skill-level {
+    /* Badge for Novice, Learning etc. */
+    padding: 3px 10px;
+    border-radius: 15px;
+    color: white;
+    font-size: 0.8em;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-left: 10px;
+    /* Space from title */
+}
+
+.clm-skill-level .dashicons {
+    font-size: 1em;
+    vertical-align: middle;
+    margin-right: 3px;
+}
+
+.clm-skill-details {
+    margin-bottom: 12px;
+}
+
+.clm-skill-progress {
+    margin-bottom: 10px;
+}
+
+.clm-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.clm-progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.clm-skill-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 15px;
+    font-size: 0.85em;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.clm-skill-goal {
+    font-size: 0.85em;
+    color: #555;
+    margin-bottom: 12px;
+    border-top: 1px dashed #eee;
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.clm-skill-goal strong {
+    color: #333;
+}
+
+.clm-skill-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: auto;
+    /* Pushes to bottom if card is flex column */
+}
+
+.clm-skill-actions .clm-button-small {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+.clm-set-goal-form {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+/* ... styles for goal form elements within .clm-set-goal-form ... */
+
+
+/* Recent Practice Section */
+.clm-recent-practice {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.clm-recent-practice h3 {
+    font-size: 1.2em;
+}
+
+.clm-practice-list {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+}
+
+.clm-practice-list li {
+    padding: 8px 0;
+    border-bottom: 1px dotted #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.clm-practice-list li:last-child {
+    border-bottom: none;
+}
+
+.clm-practice-title {
+    font-weight: 500;
+    flex-grow: 1;
+}
+
+.clm-practice-title a {
+    text-decoration: none;
+}
+
+.clm-practice-duration {
+    color: #777;
+    margin-left: 15px;
+    white-space: nowrap;
+}
+
+.clm-practice-date {
+    color: #999;
+    margin-left: 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.clm-no-skills,
+.clm-recent-practice p {
+    /* "No items found" messages */
+    padding: 20px;
+    text-align: center;
+    background: #fff;
+    border: 1px dashed #ddd;
+    color: #777;
+}

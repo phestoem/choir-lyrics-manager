@@ -4,11 +4,11 @@
  *
  * @package    Choir_Lyrics_Manager
  */
-
-// If accessed directly, exit
+ 
 if (!defined('ABSPATH')) {
     exit;
 }
+error_log("DASHBOARD_PHP: lyrics_count is set? " . (isset($lyrics_count) ? 'YES - ' . $lyrics_count : 'NO'));
 ?>
 
 <div class="wrap clm-admin-dashboard">
@@ -107,14 +107,25 @@ if (!defined('ABSPATH')) {
                         <?php foreach ($recent_practice as $practice) : 
                             $lyric_id = get_post_meta($practice->ID, '_clm_lyric_id', true);
                             $lyric_title = get_the_title($lyric_id);
-                            $duration = get_post_meta($practice->ID, '_clm_duration', true);
+                            $duration = get_post_meta($practice->ID, '_clm_duration_minutes', true);
+                            $practice_formatter = new CLM_Practice('choir-lyrics-manager', CLM_VERSION);
                         ?>
                             <tr>
                                 <td><?php echo esc_html(get_the_author_meta('display_name', $practice->post_author)); ?></td>
                                 <td>
                                     <a href="<?php echo get_edit_post_link($lyric_id); ?>"><?php echo esc_html($lyric_title); ?></a>
                                 </td>
-                                <td><?php echo esc_html($duration) . ' ' . _n('minute', 'minutes', $duration, 'choir-lyrics-manager'); ?></td>
+                                <td>
+                                    <?php 
+                                    if ($practice_formatter && $duration) { // Check if formatter instance exists
+                                        echo esc_html($practice_formatter->format_duration($duration));
+                                    } elseif ($duration) {
+                                        echo esc_html($duration) . ' ' . _n('minute', 'minutes', $duration, 'choir-lyrics-manager'); // Fallback
+                                    } else {
+                                        echo '—';
+                                    }
+                                    ?>
+                                </td>
                                 <td><?php echo get_the_date('', $practice->ID); ?></td>
                             </tr>
                         <?php endforeach; ?>

@@ -25,7 +25,7 @@ class CLM_Practice {
      * @var      string    $version    The current version of this plugin.
      */
     private $version;
-
+    private $skills_manager_instance = null; // Initialize to null explicitly
     /**
      * Initialize the class and set its properties.
      *
@@ -129,6 +129,153 @@ class CLM_Practice {
         'skill' => $updated_skill
     ));
 }
+
+    /**
+     * AJAX handler for logging a new practice session.
+     * This is the primary entry point for practice logging from the frontend.
+     */
+    public function ajax_log_lyric_practice() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('You must be logged in to track practice.', 'choir-lyrics-manager')));
+            return; // Added explicit return
+        }
+
+        // Nonce check
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'clm_practice_nonce')) {
+            error_log('CLM Practice Log: Nonce verification failed. Received: ' . (isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : 'NOT SET'));
+            wp_send_json_error(array('message' => __('Security check failed (nonce).', 'choir-lyrics-manager')));
+            return;
+        }
+
+        $required_fields = array('lyric_id', 'duration', 'confidence');
+        foreach ($required_fields as $field) {
+            if (empty($_POST[$field])) {
+                wp_send_json_error(array('message' => sprintf(__('Required field "%s" is missing.', 'choir-lyrics-manager'), esc_html($field))));
+                return;
+            }
+        }
+
+        $wp_user_id = get_current_user_id();
+        $lyric_id = intval($_POST['lyric_id']);
+        $duration_minutes = intval($_POST['duration']);
+        $confidence_rating = intval($_POST['confidence']);
+        $session_notes = isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : '';
+
+        // Validate input
+        if ($duration_minutes < 1) $duration_minutes = 1;
+        if ($confidence_rating < 1 || $confidence_rating > 5) $confidence_rating = 3;
+        if (get_post_type($lyric_id) !== 'clm_lyric' || get_post_status($lyric_id) !== 'publish') {
+             wp_send_json_error(array('message' => __('Invalid or non-published Lyric ID.', 'choir-lyrics-manager')));
+             return;
+        }
+
+        $member_cpt_id = null;
+        if (class_exists('CLM_Members')) {
+            $members_manager = new CLM_Members($this->plugin_name, $this->version);
+            $member_cpt_id = $members_manager->get_member_cpt_id_by_user_id($wp_user_id);
+        }
+
+        if (!$member_cpt_id) {
+            wp_send_json_error(array('message' => __('Associated member profile not found. Cannot log practice.', 'choir-lyrics-manager')));
+            return;
+        }
+
+        // 1. Create Practice Log CPT entry
+        $log_title = sprintf(
+            __('Practice: %s by %s on %s', 'choir-lyrics-manager'),
+            get_the_title($lyric_id),
+            get_the_title($member_cpt_id) ?: ('User #' . $wp_user_id), // Fallback title for member
+            date_i18n(get_option('date_format')) // Current date formatted by WP settings
+        );
+
+        $log_data = array(
+            'post_title'    => $log_title,
+            'post_content'  => '', // Notes will be stored in meta for easier querying if needed
+            'post_status'   => 'publish',
+            'post_author'   => $wp_user_id,
+            'post_type'     => 'clm_practice_log',
+        );
+        $log_id = wp_insert_post($log_data, true); // Pass true for WP_Error on failure
+
+        if (is_wp_error($log_id)) {
+            error_log('CLM Practice Log: Failed to insert post. ' . $log_id->get_error_message());
+            wp_send_json_error(array('message' => __('Failed to create practice log entry: ', 'choir-lyrics-manager') . $log_id->get_error_message()));
+            return;
+        }
+
+        // Save meta for the practice log entry
+        update_post_meta($log_id, '_clm_member_id', $member_cpt_id);
+        update_post_meta($log_id, '_clm_lyric_id', $lyric_id);
+        update_post_meta($log_id, '_clm_practice_date', current_time('mysql', 1)); // Local time for display, GMT for consistency
+        update_post_meta($log_id, '_clm_duration_minutes', $duration_minutes);
+        update_post_meta($log_id, '_clm_confidence_rating', $confidence_rating);
+        update_post_meta($log_id, '_clm_practice_notes', $session_notes);
+
+// Add a check after saving
+$saved_duration = get_post_meta($log_id, '_clm_duration_minutes', true);
+
+        // 2. Update aggregated skill data in clm_member_skills table
+        $skills_manager = $this->get_skills_manager();
+        if (!$skills_manager) {
+            wp_send_json_error(array('message' => __('Skill manager not available. Practice logged, but skill not updated.', 'choir-lyrics-manager')));
+            return;
+        }
+
+        $updated_skill_data = $skills_manager->update_member_skill_from_practice_session(
+            $member_cpt_id,
+            $lyric_id,
+            $duration_minutes,
+            $confidence_rating
+        );
+
+        if (is_wp_error($updated_skill_data)) {
+             error_log('CLM Practice Log: Skill update failed. ' . $updated_skill_data->get_error_message());
+             wp_send_json_error(array('message' => __('Practice logged, but skill update failed: ', 'choir-lyrics-manager') . $updated_skill_data->get_error_message()));
+             return;
+        }
+        
+        $skill_level_info = $skills_manager->get_skill_level_info($updated_skill_data->skill_level);
+
+        wp_send_json_success(array(
+            'message' => __('Practice logged successfully.', 'choir-lyrics-manager'),
+            'skill' => array(
+                'skill_level' => $updated_skill_data->skill_level,
+                'skill_level_label' => $skill_level_info ? $skill_level_info['label'] : $updated_skill_data->skill_level,
+                'skill_level_icon' =>  $skill_level_info ? $skill_level_info['icon'] : '',
+                'skill_level_color' => $skill_level_info ? $skill_level_info['color'] : '#ccc',
+                'practice_count' => $updated_skill_data->practice_count,
+				 'total_practice_minutes' => $updated_skill_data->total_practice_minutes, // <<< ADD THIS
+                'goal_date' => $updated_skill_data->goal_date ? date_i18n(get_option('date_format'), strtotime($updated_skill_data->goal_date)) : null,
+				'raw_goal_date' => $updated_skill_data->goal_date ? $updated_skill_data->goal_date : null, // <<< ADD THIS for JS data attribute
+            ),
+            'stats' => array(
+                'total_time_minutes' => $updated_skill_data->total_practice_minutes,
+                'sessions' => $updated_skill_data->practice_count,
+                'last_practice_date_display' => $updated_skill_data->last_practice_date ? date_i18n(get_option('date_format'), strtotime($updated_skill_data->last_practice_date)) : __('Never', 'choir-lyrics-manager'),
+                'confidence' => $updated_skill_data->confidence_rating
+            )
+        ));
+    }
+
+ /**
+     * Get the CLM_Skills manager instance.
+     * Creates one if it doesn't exist.
+     * @return CLM_Skills|null
+     */
+    private function get_skills_manager() {
+        if (null === $this->skills_manager_instance) {
+            if (class_exists('CLM_Skills')) {
+                // Pass plugin_name and version when instantiating
+                $this->skills_manager_instance = new CLM_Skills($this->plugin_name, $this->version);
+            } else {
+                // Log error, but try not to cause fatal error if CLM_Skills isn't loaded (though it should be)
+                error_log('CLM_Error: CLM_Skills class not found when trying to get instance in CLM_Practice.');
+                return null;
+            }
+        }
+        return $this->skills_manager_instance;
+    }
+
 
 // Fixed version of the skill update method
 private function update_skill_from_practice($member_id, $lyric_id, $duration, $confidence) {
@@ -307,56 +454,71 @@ private function update_skill_from_practice($member_id, $lyric_id, $duration, $c
     }
 
     /**
-     * Get practice history for a lyric
+     * Get practice history for a lyric by a specific member.
+     * Queries the clm_practice_log CPT.
      *
-     * @since     1.0.0
-     * @param     int       $lyric_id    The lyric ID.
-     * @param     int       $user_id     The user ID, defaults to current user.
-     * @param     int       $limit       Number of records to return, defaults to 10.
-     * @return    array                  Array of practice log entries.
+     * @param int $member_cpt_id The Post ID of the clm_member CPT.
+     * @param int $lyric_id The Post ID of the clm_lyric CPT.
+     * @param int $limit Number of log entries to retrieve.
+     * @param int $offset Offset for pagination.
+     * @return array Array of practice history items.
      */
-    public function get_practice_history($lyric_id, $user_id = 0, $limit = 10) {
-        if (!$user_id) {
-            $user_id = get_current_user_id();
-        }
-        
-        if (!$user_id) {
+    public function get_practice_history($member_cpt_id, $lyric_id, $limit = 10, $offset = 0) {
+        if ( empty($member_cpt_id) || empty($lyric_id) ) { // Check both params
             return array();
         }
-        
+
         $args = array(
             'post_type'      => 'clm_practice_log',
-            'author'         => $user_id,
-            'posts_per_page' => $limit,
+            'posts_per_page' => intval($limit),
+            'offset'         => intval($offset),
             'meta_query'     => array(
+                'relation' => 'AND',
+                array(
+                    'key'     => '_clm_member_id', // Query by Member CPT ID
+                    'value'   => $member_cpt_id,
+                    'compare' => '=',
+                    'type'    => 'NUMERIC',
+                ),
                 array(
                     'key'     => '_clm_lyric_id',
                     'value'   => $lyric_id,
                     'compare' => '=',
+                    'type'    => 'NUMERIC',
                 ),
             ),
-            'orderby'        => 'date',
+            'orderby'        => 'meta_value', // Order by the actual practice date stored in meta
+            'meta_key'       => '_clm_practice_date',
+            'meta_type'      => 'DATETIME', // Important for correct date sorting
             'order'          => 'DESC',
         );
-        
-        $logs = get_posts($args);
-        $history = array();
-        
-        foreach ($logs as $log) {
-            $practice_date = get_post_meta($log->ID, '_clm_practice_date', true);
-            $duration = get_post_meta($log->ID, '_clm_duration', true);
-            $confidence = get_post_meta($log->ID, '_clm_confidence', true);
-            
-            $history[] = array(
-                'id' => $log->ID,
-                'date' => $practice_date,
-                'duration' => intval($duration),
-                'confidence' => intval($confidence),
-                'notes' => $log->post_content
-            );
+
+        $logs_query = new WP_Query($args);
+        $history_items = array();
+
+        if ($logs_query->have_posts()) {
+            while ($logs_query->have_posts()) {
+                $logs_query->the_post();
+                $log_post_id = get_the_ID();
+                
+                // Use the correct meta keys for retrieval
+                $practice_date = get_post_meta($log_post_id, '_clm_practice_date', true);
+                $duration = get_post_meta($log_post_id, '_clm_duration_minutes', true); // CORRECTED
+                $confidence = get_post_meta($log_post_id, '_clm_confidence_rating', true); // CORRECTED
+                $notes = get_post_meta($log_post_id, '_clm_practice_notes', true);       // CORRECTED (reading from meta)
+                                                                                          // OR use get_the_content() if you decide to store notes in post_content
+                
+                $history_items[] = array(
+                    'id'                => $log_post_id,
+                    'date'              => $practice_date,
+                    'duration_minutes'  => intval($duration),
+                    'confidence_rating' => intval($confidence),
+                    'notes'             => $notes
+                );
+            }
+            wp_reset_postdata();
         }
-        
-        return $history;
+        return $history_items;
     }
 
 
@@ -464,7 +626,7 @@ private function check_achievements($member_id, $lyric_id) {
     }
 }
 
-    /**
+      /**
      * Render practice tracking widget
      *
      * @since     1.0.0
@@ -475,86 +637,97 @@ private function check_achievements($member_id, $lyric_id) {
         if (!is_user_logged_in()) {
             return '<div class="clm-notice">' . __('Please log in to track your practice.', 'choir-lyrics-manager') . '</div>';
         }
-        
-        $user_id = get_current_user_id();
-        $stats = $this->get_lyric_practice_stats($lyric_id, $user_id);
-        $history = $this->get_practice_history($lyric_id, $user_id, 5);
-        
+
+        $wp_user_id = get_current_user_id();
+        $member_cpt_id = null;
+
+        if (class_exists('CLM_Members')) {
+            $members_manager = new CLM_Members($this->plugin_name, $this->version);
+            $member_cpt_id = $members_manager->get_member_cpt_id_by_user_id($wp_user_id);
+        }
+
+        if (!$member_cpt_id) {
+             return '<div class="clm-notice">' . __('Associated member profile not found. Cannot display practice tracker.', 'choir-lyrics-manager') . '</div>';
+        }
+
+        // Get current aggregated skill/practice stats from CLM_Skills
+        $current_skill_data = null;
+        $skills_manager = $this->get_skills_manager(); // Ensure this returns a CLM_Skills instance
+        if ($skills_manager) {
+            $current_skill_data = $skills_manager->get_member_skill($member_cpt_id, $lyric_id);
+        }
+
+        // Get recent practice history (log entries)
+        // Now passing member_cpt_id as the first argument
+        $history_items = $this->get_practice_history($member_cpt_id, $lyric_id, 5);
+
         ob_start();
         ?>
-        <div class="clm-practice-tracker" data-lyric-id="<?php echo $lyric_id; ?>">
+        <div class="clm-practice-tracker" data-lyric-id="<?php echo esc_attr($lyric_id); ?>">
             <h3><?php _e('Practice Tracker', 'choir-lyrics-manager'); ?></h3>
-            
-            <div class="clm-practice-stats">
-                <div class="clm-practice-stat">
-                    <span class="clm-stat-label"><?php _e('Total Practice Time', 'choir-lyrics-manager'); ?></span>
-                    <span class="clm-stat-value"><?php echo $this->format_duration($stats['total_time']); ?></span>
-                </div>
-                
-                <div class="clm-practice-stat">
-                    <span class="clm-stat-label"><?php _e('Practice Sessions', 'choir-lyrics-manager'); ?></span>
-                    <span class="clm-stat-value"><?php echo $stats['sessions']; ?></span>
-                </div>
-                
-                <div class="clm-practice-stat">
-                    <span class="clm-stat-label"><?php _e('Last Practice', 'choir-lyrics-manager'); ?></span>
-                    <span class="clm-stat-value">
-                        <?php 
-                        if (!empty($stats['last_practice'])) {
-                            echo date_i18n(get_option('date_format'), strtotime($stats['last_practice']));
-                        } else {
-                            _e('Never', 'choir-lyrics-manager');
-                        }
-                        ?>
+
+            <div class="clm-practice-stats-display"> 
+                <h4><?php _e('Current Practice Stats for this Lyric', 'choir-lyrics-manager'); ?></h4>
+                <p>
+                    <strong><?php _e('Total Time:', 'choir-lyrics-manager'); ?></strong>
+                    <span class="clm-stat-value total-time">
+                        <?php echo $current_skill_data ? esc_html($this->format_duration($current_skill_data->total_practice_minutes)) : __('0 minutes', 'choir-lyrics-manager'); ?>
                     </span>
-                </div>
-                
-                <div class="clm-practice-stat">
-                    <span class="clm-stat-label"><?php _e('Confidence Level', 'choir-lyrics-manager'); ?></span>
-                    <span class="clm-stat-value clm-confidence-stars">
-                        <?php 
+                </p>
+                <p>
+                    <strong><?php _e('Sessions:', 'choir-lyrics-manager'); ?></strong>
+                    <span class="clm-stat-value sessions-count">
+                        <?php echo $current_skill_data ? esc_html($current_skill_data->practice_count) : '0'; ?>
+                    </span>
+                </p>
+                <p>
+                    <strong><?php _e('Last Practiced:', 'choir-lyrics-manager'); ?></strong>
+                    <span class="clm-stat-value last-practice-date">
+                        <?php echo $current_skill_data && $current_skill_data->last_practice_date ? esc_html(date_i18n(get_option('date_format'), strtotime($current_skill_data->last_practice_date))) : __('Never', 'choir-lyrics-manager'); ?>
+                    </span>
+                </p>
+                <p>
+                    <strong><?php _e('Last Confidence:', 'choir-lyrics-manager'); ?></strong>
+                    <span class="clm-stat-value confidence-stars">
+                        <?php
+                        $last_confidence = $current_skill_data ? intval($current_skill_data->confidence_rating) : 0;
                         for ($i = 1; $i <= 5; $i++) {
-                            if ($i <= $stats['confidence']) {
-                                echo '<span class="dashicons dashicons-star-filled"></span>';
-                            } else {
-                                echo '<span class="dashicons dashicons-star-empty"></span>';
-                            }
+                            echo '<span class="dashicons dashicons-star-' . ($i <= $last_confidence ? 'filled' : 'empty') . '"></span>';
                         }
                         ?>
                     </span>
-                </div>
+                </p>
             </div>
-            
-            <div class="clm-practice-form">
-                <h4><?php _e('Log Practice Session', 'choir-lyrics-manager'); ?></h4>
-                
-                <div class="clm-practice-field">
-                    <label for="clm-practice-duration"><?php _e('Duration (minutes)', 'choir-lyrics-manager'); ?></label>
-                    <input type="number" id="clm-practice-duration" min="1" step="1" value="15">
-                </div>
-                
-                <div class="clm-practice-field">
-                    <label for="clm-practice-confidence"><?php _e('Confidence Level', 'choir-lyrics-manager'); ?></label>
+
+            <h4><?php _e('Log New Practice Session', 'choir-lyrics-manager'); ?></h4>
+            <div id="clm-practice-form-fields">
+                <p>
+                    <label for="clm-practice-duration"><?php _e('Duration (minutes):', 'choir-lyrics-manager'); ?></label><br>
+                    <input type="number" id="clm-practice-duration" min="1" value="15">
+                </p>
+                <p>
+                    <label for="clm-practice-confidence"><?php _e('Your Confidence (1-5):', 'choir-lyrics-manager'); ?></label><br>
                     <select id="clm-practice-confidence">
-                        <option value="1"><?php _e('1 - Just Started', 'choir-lyrics-manager'); ?></option>
-                        <option value="2"><?php _e('2 - Learning', 'choir-lyrics-manager'); ?></option>
-                        <option value="3" selected><?php _e('3 - Getting There', 'choir-lyrics-manager'); ?></option>
-                        <option value="4"><?php _e('4 - Confident', 'choir-lyrics-manager'); ?></option>
-                        <option value="5"><?php _e('5 - Mastered', 'choir-lyrics-manager'); ?></option>
+                         <?php
+                        $confidence_levels = $this->get_confidence_level_options();
+                        $default_confidence = 3;
+
+                        foreach ($confidence_levels as $value => $label) {
+                            echo "<option value='{$value}'" . selected($value, $default_confidence, false) . ">" . esc_html($label) . "</option>";
+                        }
+                        ?>
                     </select>
-                </div>
-                
-                <div class="clm-practice-field">
-                    <label for="clm-practice-notes"><?php _e('Notes', 'choir-lyrics-manager'); ?></label>
-                    <textarea id="clm-practice-notes" rows="3" placeholder="<?php _e('Optional notes about this practice session', 'choir-lyrics-manager'); ?>"></textarea>
-                </div>
-                
-                <button id="clm-log-practice" class="button button-primary"><?php _e('Log Practice', 'choir-lyrics-manager'); ?></button>
-                <div id="clm-practice-message"></div>
+                </p>
+                <p>
+                    <label for="clm-practice-notes"><?php _e('Notes (optional):', 'choir-lyrics-manager'); ?></label><br>
+                    <textarea id="clm-practice-notes" rows="3" placeholder="<?php esc_attr_e('e.g., worked on bridge, timing issues...', 'choir-lyrics-manager'); ?>"></textarea>
+                </p>
+                <button type="button" id="clm-submit-practice-log" class="clm-button"><?php _e('Log Session', 'choir-lyrics-manager'); ?></button>
             </div>
-            
-            <?php if (!empty($history)) : ?>
-                <div class="clm-practice-history">
+            <div id="clm-practice-log-message" class="clm-ajax-message" style="display:none;"></div>
+
+            <?php if (!empty($history_items)) : ?>
+                <div class="clm-practice-history" style="margin-top: 20px;">
                     <h4><?php _e('Recent Practice History', 'choir-lyrics-manager'); ?></h4>
                     <table class="clm-practice-history-table">
                         <thead>
@@ -566,34 +739,49 @@ private function check_achievements($member_id, $lyric_id) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($history as $log) : ?>
+                            <?php foreach ($history_items as $log_item) : ?>
                                 <tr>
-                                    <td><?php echo date_i18n(get_option('date_format'), strtotime($log['date'])); ?></td>
-                                    <td><?php echo sprintf(_n('%d minute', '%d minutes', $log['duration'], 'choir-lyrics-manager'), $log['duration']); ?></td>
+                                    <td><?php echo $log_item['date'] ? esc_html(date_i18n(get_option('date_format'), strtotime($log_item['date']))) : '—'; ?></td>
+                                    <td><?php echo $log_item['duration_minutes'] ? sprintf(_n('%d minute', '%d minutes', $log_item['duration_minutes'], 'choir-lyrics-manager'), esc_html($log_item['duration_minutes'])) : '—'; ?></td>
                                     <td>
-                                        <?php 
-                                        for ($i = 1; $i <= 5; $i++) {
-                                            if ($i <= $log['confidence']) {
-                                                echo '<span class="dashicons dashicons-star-filled"></span>';
-                                            } else {
-                                                echo '<span class="dashicons dashicons-star-empty"></span>';
+                                        <?php
+                                        $confidence_val = intval($log_item['confidence_rating']);
+                                        if ($confidence_val > 0) {
+                                            for ($i = 1; $i <= 5; $i++) {
+                                                echo '<span class="dashicons dashicons-star-' . ($i <= $confidence_val ? 'filled' : 'empty') . '"></span>';
                                             }
+                                        } else {
+                                            echo '—';
                                         }
                                         ?>
                                     </td>
-                                    <td><?php echo !empty($log['notes']) ? esc_html($log['notes']) : '—'; ?></td>
+                                    <td><?php echo !empty($log_item['notes']) ? nl2br(esc_html($log_item['notes'])) : '—'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <a href="#" class="clm-view-all-history"><?php _e('View All History', 'choir-lyrics-manager'); ?></a>
+                    <?php // You might want a link to a full history page if $limit is used
+                    // if (count($history_items) >= $your_history_limit) echo '<a href="#" class="clm-view-all-history">View All History »</a>';
+                    ?>
                 </div>
             <?php endif; ?>
-            
-            <?php wp_nonce_field('clm_practice_nonce', 'clm_practice_nonce'); ?>
+
+            <?php // Nonce field is good for non-JS fallback, but clm_vars handles AJAX nonce
+                 // wp_nonce_field('clm_practice_nonce', 'clm_practice_log_nonce_field_for_js');
+            ?>
         </div>
         <?php
         return ob_get_clean();
+    }
+	
+	public function get_confidence_level_options() {
+        return array(
+            1 => __('1 - Just Starting / Unsure', 'choir-lyrics-manager'),
+            2 => __('2 - Some Sections Known', 'choir-lyrics-manager'),
+            3 => __('3 - Getting There / Mostly Known', 'choir-lyrics-manager'),
+            4 => __('4 - Confident / Few Slips', 'choir-lyrics-manager'),
+            5 => __('5 - Mastered / Performance Ready', 'choir-lyrics-manager')
+        );
     }
     
     /**
@@ -603,7 +791,7 @@ private function check_achievements($member_id, $lyric_id) {
      * @param     int       $minutes    Duration in minutes.
      * @return    string                Formatted duration.
      */
-    private function format_duration($minutes) {
+    public function format_duration($minutes) {
         $minutes = intval($minutes);
         
         if ($minutes < 60) {

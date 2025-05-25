@@ -8,61 +8,178 @@
 // Include the AJAX handlers trait
 require_once CLM_PLUGIN_DIR . 'includes/trait-clm-ajax-handlers.php';
 class CLM_Public {
- use CLM_Ajax_Handlers;
-    /**
-     * The ID of this plugin.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      string    $plugin_name    The ID of this plugin.
-     */
+ 
+    // Use the trait for AJAX handlers if it defines them
+    // Ensure the trait methods are public and correctly named.
+    use CLM_Ajax_Handlers;
+
     private $plugin_name;
-
-    /**
-     * The version of this plugin.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      string    $version    The current version of this plugin.
-     */
     private $version;
+    private $settings; // Instance of CLM_Settings
 
-    /**
-     * The settings instance.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      CLM_Settings    $settings    The settings instance.
-     */
-    private $settings;
-
-    /**
-     * Initialize the class and set its properties.
-     *
-     * @since    1.0.0
-     * @param    string       $plugin_name    The name of this plugin.
-     * @param    string       $version        The version of this plugin.
-     */
     public function __construct($plugin_name, $version) {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
-        $this->settings = new CLM_Settings($plugin_name, $version);
-		$this->register_ajax_handlers();
-		
-		 // Add our attachment icons filter
-		add_filter('the_title', array($this, 'add_attachment_icons'), 10, 2);
+
+        // Instantiate CLM_Settings if needed by this class
+        if (class_exists('CLM_Settings')) {
+            $this->settings = new CLM_Settings($this->plugin_name, $this->version);
+        } else {
+            // Fallback or error log if CLM_Settings is critical and not found
+            $this->settings = null; // or new stdClass() to avoid errors on ->get_setting()
+            // error_log('CLM_Public Warning: CLM_Settings class not found during instantiation.');
+        }
+
+        // If AJAX handlers are in the trait, this call might be redundant if they auto-hook,
+        // or necessary if register_ajax_handlers uses $this->loader (which it shouldn't in this class).
+        // The main plugin class (Choir_Lyrics_Manager) should hook these AJAX actions directly.
+        // For now, assuming register_ajax_handlers() uses add_action directly (which is fine for self-contained AJAX).
+        if (method_exists($this, 'register_ajax_handlers')) {
+             $this->register_ajax_handlers();
+        }
+
+        // Other direct filters
+        add_filter('the_title', array($this, 'add_attachment_icons'), 10, 2);
+        add_filter('theme_page_templates', array($this, 'register_custom_templates'));
+        add_filter('template_include', array($this, 'add_custom_template_location'));
     }
 
-    /**
-     * Register the stylesheets for the public-facing side of the site.
-     *
-     * @since    1.0.0
-     */
     public function enqueue_styles() {
-        wp_enqueue_style($this->plugin_name, CLM_PLUGIN_URL . 'assets/css/public.css', array(), $this->version, 'all');
-        wp_add_inline_style($this->plugin_name, $this->settings->get_custom_css());
-		 // Ensure dashicons are loaded
-		wp_enqueue_style('dashicons');
+        // Ensure CLM_PLUGIN_URL is defined and correct
+        $css_path = CLM_PLUGIN_URL . 'assets/css/public.css'; // Assuming this path
+        wp_enqueue_style($this->plugin_name, $css_path, array(), $this->version, 'all');
+
+        if ($this->settings && method_exists($this->settings, 'get_custom_css')) {
+            $custom_css = $this->settings->get_custom_css();
+            if (!empty($custom_css)) {
+                wp_add_inline_style($this->plugin_name, $custom_css);
+            }
+        }
+        wp_enqueue_style('dashicons');
+    }
+
+    public function enqueue_scripts() {
+        // For PHP error log debugging
+		 $is_single_lyric = is_singular('clm_lyric');
+        if (is_singular('clm_lyric')) {
+            // error_log('CLM_DEBUG: CLM_Public::enqueue_scripts() CALLED on SINGLE clm_lyric page.');
+        }
+
+        $script_handle = $this->plugin_name; // e.g., 'choir-lyrics-manager'
+        $script_path = CLM_PLUGIN_URL . 'js/public.js'; // CONFIRMED PATH
+
+        wp_enqueue_script(
+            $script_handle,
+            $script_path,
+            array('jquery'),
+            $this->version,
+            true // Load in footer
+        );
+
+        // Prepare nonces
+        $nonces_for_js = array(
+            'search'               => wp_create_nonce('clm_search_nonce'), // For generic search if any
+            'filter'               => wp_create_nonce('clm_filter_nonce'), // Fallback, and for main archive filter
+            'ajax_filter'          => wp_create_nonce('clm_filter_nonce'), // Specific for handle_ajax_filter
+            'shortcode_filter'     => wp_create_nonce('clm_shortcode_filter_nonce'), // Make sure PHP handler verifies this name
+
+            'create_playlist'      => wp_create_nonce('clm_playlist_nonce'),
+            'add_to_playlist'      => wp_create_nonce('clm_playlist_nonce'),
+            'remove_from_playlist' => wp_create_nonce('clm_playlist_nonce'),
+            'delete_user_playlist' => wp_create_nonce('clm_playlist_nonce'),
+
+            // If you add other AJAX playlist actions, add their nonces here, likely using 'clm_playlist_nonce' too
+            // 'update_playlist_details' => wp_create_nonce('clm_playlist_nonce'),
+            // 'reorder_playlist_tracks' => wp_create_nonce('clm_playlist_nonce'),
+
+            'log_lyric_practice'   => wp_create_nonce('clm_practice_nonce'),
+            'set_lyric_skill_goal' => wp_create_nonce('clm_skills_nonce'),
+        );
+
+        // Initialize $localized_data as an array
+        $localized_data = array(
+            'ajaxurl'           => admin_url('admin-ajax.php'),
+            'is_user_logged_in' => is_user_logged_in(),
+            'nonce'             => $nonces_for_js,
+            'text'              => array(
+                'practice_success'        => __('Practice logged successfully!', 'choir-lyrics-manager'),
+                'playlist_success'        => __('Playlist updated successfully!', 'choir-lyrics-manager'),
+                'playlist_error'          => __('Error updating playlist.', 'choir-lyrics-manager'),
+                'confirm_remove'          => __('Are you sure you want to remove this item?', 'choir-lyrics-manager'),
+                'search_min_length'       => __('Please enter at least 2 characters', 'choir-lyrics-manager'),
+                'searching'               => __('Searching...', 'choir-lyrics-manager'),
+                'loading'                 => __('Loading...', 'choir-lyrics-manager'),
+                'error'                   => __('An error occurred. Please try again.', 'choir-lyrics-manager'),
+                'practice_logging'        => __('Logging practice...', 'choir-lyrics-manager'),
+                'log_session'             => __('Log Session', 'choir-lyrics-manager'),
+                'practice_log_success'    => __('Practice logged!', 'choir-lyrics-manager'),
+                'practice_log_error'      => __('Error logging practice.', 'choir-lyrics-manager'),
+                'practice_log_error_ajax' => __('AJAX request failed while logging practice.', 'choir-lyrics-manager'),
+                'set_goal_title'          => __('Set Practice Goal', 'choir-lyrics-manager'),
+                'set_goal_description'    => __('Choose a target date for mastering this piece:', 'choir-lyrics-manager'),
+                'confirm'                 => __('Confirm', 'choir-lyrics-manager'), // Generic confirm
+                'cancel'                  => __('Cancel', 'choir-lyrics-manager'),
+                'saving'                  => __('Saving...', 'choir-lyrics-manager'),
+                'skill_goal_saving'       => __('Saving goal...', 'choir-lyrics-manager'),
+                'set_goal_button'         => __('Set Goal', 'choir-lyrics-manager'),
+                'save_goal_button'        => __('Save Goal', 'choir-lyrics-manager'),
+                'change_goal_button'      => __('Change Goal', 'choir-lyrics-manager'),
+                'goal_set_success'        => __('Goal updated successfully!', 'choir-lyrics-manager'),
+                'skill_goal_success'      => __('Goal updated!', 'choir-lyrics-manager'), // More generic
+                'please_select_date'      => __('Please select a date', 'choir-lyrics-manager'),
+                'goal'                    => __('Goal', 'choir-lyrics-manager'),
+                'skill_goal_error'        => __('Error updating goal.', 'choir-lyrics-manager'),
+                'skill_goal_error_ajax'   => __('AJAX request failed while setting goal.', 'choir-lyrics-manager'),
+                'duration_0_minutes'      => __('0 minutes', 'choir-lyrics-manager'),
+                'duration_minute'         => __(' minute', 'choir-lyrics-manager'),
+                'duration_minutes'        => __(' minutes', 'choir-lyrics-manager'),
+                'duration_hour'           => __(' hour', 'choir-lyrics-manager'),
+                'duration_hours'          => __(' hours', 'choir-lyrics-manager'),
+				
+				
+				'playlist_data_missing' 	=> __('Playlist or lyric data missing.', 'choir-lyrics-manager'),
+				'playlist_adding' 			=> __('Adding...', 'choir-lyrics-manager'),
+				'playlist_added_feedback' 	=> __('✓ Added', 'choir-lyrics-manager'),
+				'playlist_already_in' 		=> __('Already in', 'choir-lyrics-manager'),
+				'playlist_error_short' 		=> __('Error', 'choir-lyrics-manager'), // Short error for button
+				'playlist_error_generic' 	=> __('An error occurred.', 'choir-lyrics-manager'), // For notification
+				'playlist_error_connection' => __('Connection Error', 'choir-lyrics-manager'), // Short for button
+				'playlist_error_connection_long' => __('Could not connect to the server. Please try again.', 'choir-lyrics-manager'), // For notification
+				'playlist_name_required'	=> __('Playlist name is required', 'choir-lyrics-manager'),
+				'playlist_creating'			=> __('Create a playlist', 'choir-lyrics-manager'),
+				'playlist_created_added'	=> __('New Playlist has been successufully added', 'choir-lyrics-manager'),
+                'playlist_confirm_remove_lyric' => __('Are you sure you want to remove this lyric from the playlist?', 'choir-lyrics-manager'),
+                'playlist_removing_lyric'       => __('Removing...', 'choir-lyrics-manager'),
+                'playlist_remove_success'       => __('Lyric removed from playlist!', 'choir-lyrics-manager'),
+                'playlist_removed_feedback'     => __('✓ Removed', 'choir-lyrics-manager'),
+                'playlist_confirm_delete_list' => __('Are you sure you want to permanently delete this playlist? This cannot be undone.', 'choir-lyrics-manager'),
+                'playlist_deleting' => __('Deleting...', 'choir-lyrics-manager'),
+                'playlist_delete_success' => __('Playlist deleted successfully!', 'choir-lyrics-manager'),
+				
+            ),
+            // skill_levels_js will be added next
+        );
+
+        if (class_exists('CLM_Skills')) {
+            $skills_temp = new CLM_Skills($this->plugin_name, $this->version);
+            if (method_exists($skills_temp, 'get_skill_levels')) {
+                $localized_data['skill_levels_js'] = $skills_temp->get_skill_levels();
+            }
+        }
+
+        wp_localize_script($script_handle, 'clm_vars', $localized_data);
+
+        // Debugging check (from Test A in previous response)
+        if ($is_single_lyric) {
+            $is_enqueued = wp_script_is($script_handle, 'enqueued');
+            $is_registered = wp_script_is($script_handle, 'registered');
+            $has_data = false;
+            global $wp_scripts;
+            if (isset($wp_scripts->registered[$script_handle]) && !empty($wp_scripts->get_data($script_handle, 'data'))) {
+                $has_data = true;
+            }
+            // error_log("CLM_DEBUG SINGLE SCRIPT STATUS for '{$script_handle}': Path: {$script_path}, Registered: " . ($is_registered ? 'YES' : 'NO') . ", Enqueued: " . ($is_enqueued ? 'YES' : 'NO') . ", Has Localized Data: " . ($has_data ? 'YES' : 'NO'));
+        }
     }
 
 
@@ -125,58 +242,7 @@ public function add_attachment_icons($title, $post_id) {
     return $title . $icons_html;
 }
 
-    /**
-     * Register the JavaScript for the public-facing side of the site.
-     *
-     * @since    1.0.0
-     */
-  /**
- * Update the enqueue_scripts method to include new nonces
- */
-public function enqueue_scripts() {
-    wp_enqueue_script($this->plugin_name, CLM_PLUGIN_URL . 'js/public.js', array('jquery'), $this->version, true);
-    
-	// Create nonces
-   	 	
-	// Debug the nonce generation
-    $filter_nonce = wp_create_nonce('clm_filter_nonce');
-	error_log('Creating filter nonce with action "clm_filter_nonce": ' . $filter_nonce);
-    error_log('CLM Nonce Generated: ' . $filter_nonce);
-	
-	  $all_nonces = array(
-        'practice' => wp_create_nonce('clm_practice_nonce'),
-        'playlist' => wp_create_nonce('clm_playlist_nonce'),
-        'search' => wp_create_nonce('clm_search_nonce'),
-        'filter' => wp_create_nonce('clm_filter_nonce'),
-        'skills' => wp_create_nonce('clm_skills_nonce'),
-        'shortcode_filter' => wp_create_nonce('clm_shortcode_filter')
-    );
-	
-    wp_localize_script($this->plugin_name, 'clm_vars', array(
-        'ajaxurl' => admin_url('admin-ajax.php'),
-        'is_user_logged_in' => is_user_logged_in(),
-        'nonce' => $all_nonces,
-        'text' => array(
-            'practice_success' => __('Practice logged successfully!', 'choir-lyrics-manager'),
-            'playlist_success' => __('Playlist updated successfully!', 'choir-lyrics-manager'),
-            'playlist_error' => __('Error updating playlist.', 'choir-lyrics-manager'),
-            'confirm_remove' => __('Are you sure you want to remove this item?', 'choir-lyrics-manager'),
-            'search_min_length' => __('Please enter at least 2 characters', 'choir-lyrics-manager'),
-            'searching' => __('Searching...', 'choir-lyrics-manager'),
-            'loading' => __('Loading...', 'choir-lyrics-manager'),
-            'error' => __('An error occurred. Please try again.', 'choir-lyrics-manager'),			
-			 // Add skill management texts
-            'set_goal_title' => __('Set Practice Goal', 'choir-lyrics-manager'),
-            'set_goal_description' => __('Choose a target date for mastering this piece:', 'choir-lyrics-manager'),
-            'confirm' => __('Set Goal', 'choir-lyrics-manager'),
-            'cancel' => __('Cancel', 'choir-lyrics-manager'),
-            'saving' => __('Saving...', 'choir-lyrics-manager'),
-            'goal_set_success' => __('Goal set successfully!', 'choir-lyrics-manager'),
-            'please_select_date' => __('Please select a date', 'choir-lyrics-manager'),
-            'goal' => __('Goal', 'choir-lyrics-manager'),
-        ),
-    ));
-}
+ 
 	/**
 	 * Register AJAX handlers
 	 * Add this to the constructor or hook initialization
@@ -218,7 +284,11 @@ public function enqueue_scripts() {
         
         // Playlist shortcode
         add_shortcode('clm_playlist', array($this, 'playlist_shortcode'));
-        
+        // add_shortcode('clm_my_playlists', array($this, 'render_my_playlists_shortcode'));
+        $playlists_handler = new CLM_Playlists($this->plugin_name, $this->version);
+        add_shortcode('clm_my_playlists', array($playlists_handler, 'render_my_playlists_shortcode'));
+        add_shortcode('clm_view_playlist_tracks', array($playlists_handler, 'render_single_playlist_from_url_shortcode'));
+
         // Submission form shortcode
         add_shortcode('clm_submission_form', array($this, 'submission_form_shortcode'));
         
@@ -230,6 +300,10 @@ public function enqueue_scripts() {
 		
 		 // Add skills dashboard shortcode
 		add_shortcode('clm_skills_dashboard', array($this, 'skills_dashboard_shortcode'));
+		
+		$albums_handler = new CLM_Albums($this->plugin_name, $this->version); // Or get instance if already created
+		add_shortcode('clm_album', array($albums_handler, 'album_shortcode_output'));
+		add_shortcode('clm_albums', array($albums_handler, 'albums_shortcode_output'));
     }
 	public function skills_dashboard_shortcode($atts) {
 		if (!is_user_logged_in()) {
@@ -468,8 +542,8 @@ public function lyrics_list_shortcode($atts) {
     
     // Debug query info if needed
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('CLM Shortcode Query: ' . print_r($args, true));
-        error_log('CLM Shortcode SQL: ' . $query->request);
+        // error_log('CLM Shortcode Query: ' . print_r($args, true));
+        // error_log('CLM Shortcode SQL: ' . $query->request);
     }
     
     ob_start();
@@ -988,23 +1062,36 @@ public function practice_widget_shortcode($atts) {
      * @param     string    $template    Template path.
      * @return    string                 Modified template path.
      */
-    public function load_lyric_template($template) {
-        global $post;
-        
-        if ($post->post_type === 'clm_lyric') {
-            // Check if a custom template exists in the theme
-            $theme_template = locate_template(array('single-clm_lyric.php'));
-            
-            if ($theme_template) {
-                return $theme_template;
-            }
-            
-            // Use plugin template
-            return CLM_PLUGIN_DIR . 'templates/single-lyric.php';
+   public function load_lyric_template($template) {
+    global $post;
+
+    if (is_object($post) && isset($post->post_type) && $post->post_type === 'clm_lyric') { // 'clm_lyric' is your CPT slug
+
+        // 1. Look for single-clm_lyric.php in child theme
+        $theme_template_child = get_stylesheet_directory() . '/single-clm_lyric.php';
+        if (file_exists($theme_template_child)) {
+            // error_log('CLM_TEMPLATE_LOAD: Using CHILD THEME template: ' . $theme_template_child);
+            return $theme_template_child;
         }
-        
-        return $template;
+
+        // 2. Look for single-clm_lyric.php in parent theme
+        $theme_template_parent = get_template_directory() . '/single-clm_lyric.php';
+        if (file_exists($theme_template_parent)) {
+            // error_log('CLM_TEMPLATE_LOAD: Using PARENT THEME template: ' . $theme_template_parent);
+            return $theme_template_parent;
+        }
+
+        // 3. Fall back to plugin's template (with the conventional name)
+        $plugin_template = CLM_PLUGIN_DIR . 'templates/single-clm_lyric.php'; // CORRECTED FILENAME
+        if (file_exists($plugin_template)) {
+            // error_log('CLM_TEMPLATE_LOAD: Using PLUGIN template: ' . $plugin_template . ' for post ID ' . $post->ID);
+            return $plugin_template;
+        } else {
+            // error_log('CLM_TEMPLATE_LOAD_ERROR: Plugin template NOT FOUND: ' . $plugin_template);
+        }
     }
+    return $template; // Return original template if no conditions met or plugin template not found
+}
 
     /**
      * Load custom template for archive
@@ -1358,5 +1445,26 @@ public function practice_widget_shortcode($atts) {
         );
     }
 
+
+/**
+ * Register custom page templates
+ *
+ * @param array $templates The existing templates array
+ * @return array Modified templates array
+ */
+public function register_custom_templates($templates) {
+    $templates['media-browse.php'] = __('Media Browser', 'choir-lyrics-manager');
+    return $templates;
+}
+
+/**
+ * Add the template to the page templates
+ */
+public function add_custom_template_location($template) {
+    if (is_page_template('media-browse.php')) {
+        $template = plugin_dir_path(dirname(__FILE__)) . 'templates/media-browse.php';
+    }
+    return $template;
+}
 }
 

@@ -214,4 +214,16 @@ class CLM_Activator {
 			update_option('clm_db_version', '1.1.0');
 		}
 	}
+	
+	// Add to your plugin activation function
+	function activate_choir_lyrics_manager() {
+		require_once CLM_PLUGIN_DIR . 'includes/class-clm-activator.php';
+		CLM_Activator::activate();
+		
+		// Create assets/images directory if it doesn't exist
+		$images_dir = CLM_PLUGIN_DIR . 'assets/images';
+		if (!file_exists($images_dir)) {
+			wp_mkdir_p($images_dir);
+		}
+	}
 }

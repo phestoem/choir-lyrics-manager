@@ -1,542 +1,249 @@
 <?php
 /**
- * Member Dashboard - Skills Tab
+ * Member Skills Dashboard Template
+ * Displays the current user's skill progress and practice history.
  *
- * @package    Choir_Lyrics_Manager
+ * Expected variables in scope from the calling function (e.g., CLM_Admin::display_my_skills_page_callback):
+ * - $member_post : WP_Post object for the current user's Member CPT entry.
+ * - $plugin_name : string, your plugin's unique name/slug.
+ * - $version     : string, your plugin's current version.
  */
 
-// If accessed directly, exit
 if (!defined('ABSPATH')) {
-    exit;
+    exit; // Exit if accessed directly.
 }
 
-// Get skills instance
-$skills_instance = new CLM_Skills('choir-lyrics-manager', CLM_VERSION);
-$member_skills = $skills_instance->get_member_skills($member->ID);
-$skill_levels = $skills_instance->get_skill_levels();
+// Ensure $member_post is set and is a valid Member CPT post.
+if (!isset($member_post) || !is_object($member_post) || $member_post->post_type !== 'clm_member') {
+    echo '<div class="wrap clm-member-skills-dashboard"><div class="notice notice-warning is-dismissible"><p>' . __('Your associated Member profile could not be loaded. Skill data cannot be displayed.', 'choir-lyrics-manager') . '</p></div></div>';
+    return; // Stop further processing if member profile is not found.
+}
+$member_cpt_id = $member_post->ID;
 
-// Filter skills by level if requested
-$filter_level = isset($_GET['skill_level']) ? sanitize_text_field($_GET['skill_level']) : '';
-if ($filter_level && array_key_exists($filter_level, $skill_levels)) {
-    $member_skills = array_filter($member_skills, function($skill) use ($filter_level) {
-        return $skill->skill_level === $filter_level;
+// Instantiate necessary service classes
+$skills_instance = null;
+if (class_exists('CLM_Skills')) {
+    $skills_instance = new CLM_Skills($plugin_name, $version);
+} else {
+    echo '<div class="wrap clm-member-skills-dashboard"><div class="notice notice-error is-dismissible"><p>' . __('Skills system is currently unavailable.', 'choir-lyrics-manager') . '</p></div></div>';
+    return;
+}
+
+$practice_instance = null;
+if (class_exists('CLM_Practice')) {
+    $practice_instance = new CLM_Practice($plugin_name, $version);
+}
+
+// Fetch member's skills
+$member_skills_data = array();
+if ($skills_instance && method_exists($skills_instance, 'get_member_skills_with_lyric_titles')) {
+    $member_skills_data = $skills_instance->get_member_skills_with_lyric_titles($member_cpt_id);
+}
+$skill_levels_map = $skills_instance->get_skill_levels(); // Assuming this method exists and is public
+
+// --- Filtering and Sorting Logic ---
+$filter_level_req = isset($_GET['skill_level']) ? sanitize_text_field($_GET['skill_level']) : '';
+if ($filter_level_req && !empty($member_skills_data) && isset($skill_levels_map[$filter_level_req])) {
+    $member_skills_data = array_filter($member_skills_data, function($skill_item) use ($filter_level_req) {
+        return isset($skill_item->skill_level) && $skill_item->skill_level === $filter_level_req;
     });
 }
 
-// Sort skills
-$sort_by = isset($_GET['sort']) ? sanitize_text_field($_GET['sort']) : 'title';
-usort($member_skills, function($a, $b) use ($sort_by) {
-    switch ($sort_by) {
-        case 'level':
-            $level_order = array('master' => 4, 'proficient' => 3, 'learning' => 2, 'novice' => 1);
-            return $level_order[$b->skill_level] - $level_order[$a->skill_level];
-            
-        case 'practice':
-            return $b->practice_count - $a->practice_count;
-            
-        case 'recent':
-            return strtotime($b->last_practice_date) - strtotime($a->last_practice_date);
-            
-        default:
-            return strcasecmp($a->lyric_title, $b->lyric_title);
-    }
-});
+$sort_by_req = isset($_GET['sort']) ? sanitize_text_field($_GET['sort']) : 'title'; // Default sort
+if (!empty($member_skills_data)) {
+    usort($member_skills_data, function($a, $b) use ($sort_by_req, $skill_levels_map) {
+        switch ($sort_by_req) {
+            case 'level':
+                $a_val = isset($a->skill_level, $skill_levels_map[$a->skill_level]) ? $skill_levels_map[$a->skill_level]['value'] : -1;
+                $b_val = isset($b->skill_level, $skill_levels_map[$b->skill_level]) ? $skill_levels_map[$b->skill_level]['value'] : -1;
+                return $b_val <=> $a_val; // Sort by level value descending
+            case 'practice':
+                return ($b->practice_count ?? 0) <=> ($a->practice_count ?? 0); // Descending practice count
+            case 'recent':
+                $a_time = isset($a->last_practice_date) ? strtotime($a->last_practice_date) : 0;
+                $b_time = isset($b->last_practice_date) ? strtotime($b->last_practice_date) : 0;
+                return $b_time <=> $a_time; // Most recent first
+            default: // 'title'
+                return strcasecmp($a->lyric_title ?? '', $b->lyric_title ?? ''); // Ascending title
+        }
+    });
+}
 
-// Skill statistics
-$skill_stats = array('novice' => 0, 'learning' => 0, 'proficient' => 0, 'master' => 0);
-$total_practice_sessions = 0;
-foreach ($member_skills as $skill) {
-    if (isset($skill_stats[$skill->skill_level])) {
-        $skill_stats[$skill->skill_level]++;
+// Calculate skill statistics for the overview
+$skill_counts_summary = array_fill_keys(array_keys($skill_levels_map), 0);
+$total_practice_sessions_summary = 0;
+$total_practice_time_summary = 0;
+
+if (!empty($member_skills_data)) {
+    foreach ($member_skills_data as $skill_item) {
+        if (isset($skill_item->skill_level) && isset($skill_counts_summary[$skill_item->skill_level])) {
+            $skill_counts_summary[$skill_item->skill_level]++;
+        }
+        $total_practice_sessions_summary += (isset($skill_item->practice_count) ? (int)$skill_item->practice_count : 0);
+        $total_practice_time_summary += (isset($skill_item->total_practice_minutes) ? (int)$skill_item->total_practice_minutes : 0);
     }
-    $total_practice_sessions += $skill->practice_count;
 }
 ?>
 
-<div class="clm-skills-tab">
-    <div class="clm-skills-header">
-        <h2><?php _e('My Skills Overview', 'choir-lyrics-manager'); ?></h2>
-        
-        <div class="clm-skills-summary">
-            <div class="clm-summary-cards">
-                <?php foreach ($skill_levels as $level => $info): ?>
-                    <div class="clm-summary-card" style="border-color: <?php echo $info['color']; ?>">
-                        <div class="clm-summary-icon" style="color: <?php echo $info['color']; ?>">
-                            <span class="dashicons <?php echo $info['icon']; ?>"></span>
-                        </div>
-                        <div class="clm-summary-count"><?php echo $skill_stats[$level]; ?></div>
-                        <div class="clm-summary-label"><?php echo $info['label']; ?></div>
-                        <div class="clm-summary-desc"><?php echo $info['description']; ?></div>
+<div class="wrap clm-member-skills-dashboard">
+    <h1><?php _e('My Skill Progress', 'choir-lyrics-manager'); ?></h1>
+
+    <!-- Skills Overview Section -->
+    <div class="clm-skills-overview">
+        <h3><?php _e('Overview', 'choir-lyrics-manager'); ?></h3>
+        <div class="clm-skill-stats-summary-grid">
+            <?php foreach ($skill_levels_map as $level_key => $level_info): 
+                // Skip 'unknown' if it has 0 count and you don't want to show it
+                if ($level_key === 'unknown' && $skill_counts_summary[$level_key] === 0) continue;
+            ?>
+                <div class="clm-skill-stat-box" style="border-left-color: <?php echo esc_attr($level_info['color']); ?>;">
+                    <span class="dashicons <?php echo esc_attr($level_info['icon']); ?>" style="color: <?php echo esc_attr($level_info['color']); ?>"></span>
+                    <div class="clm-skill-stat-content">
+                        <span class="clm-skill-count"><?php echo esc_html($skill_counts_summary[$level_key]); ?></span>
+                        <span class="clm-skill-label"><?php echo esc_html($level_info['label']); ?></span>
                     </div>
-                <?php endforeach; ?>
-            </div>
-            
-            <div class="clm-skills-progress">
-                <div class="clm-progress-bar">
-                    <?php 
-                    $total_skills = count($member_skills);
-                    if ($total_skills > 0):
-                        foreach ($skill_levels as $level => $info):
-                            $percentage = ($skill_stats[$level] / $total_skills) * 100;
-                            if ($percentage > 0):
-                            ?>
-                            <div class="clm-progress-segment" 
-                                 style="width: <?php echo $percentage; ?>%; background-color: <?php echo $info['color']; ?>" 
-                                 title="<?php echo $info['label'] . ': ' . $skill_stats[$level]; ?>">
-                            </div>
-                            <?php
-                            endif;
-                        endforeach;
-                    endif;
-                    ?>
                 </div>
-                <div class="clm-progress-labels">
-                    <span><?php echo sprintf(__('%d Total Songs', 'choir-lyrics-manager'), $total_skills); ?></span>
-                    <span><?php echo sprintf(__('%d Practice Sessions', 'choir-lyrics-manager'), $total_practice_sessions); ?></span>
-                </div>
-            </div>
+            <?php endforeach; ?>
         </div>
+        <?php if (count($member_skills_data) > 0): ?>
+        <div class="clm-overall-practice-summary">
+            <p>
+                <?php printf(__('Total songs with skill data: %d', 'choir-lyrics-manager'), count($member_skills_data)); ?>
+                <span class="clm-summary-separator">|</span>
+                <?php printf(__('Total practice sessions logged: %d', 'choir-lyrics-manager'), $total_practice_sessions_summary); ?>
+                <span class="clm-summary-separator">|</span>
+                <?php printf(__('Total practice time: %s', 'choir-lyrics-manager'), esc_html($skills_instance->format_minutes($total_practice_time_summary))); ?>
+            </p>
+        </div>
+        <?php endif; ?>
     </div>
-    
-    <div class="clm-skills-filters">
-        <div class="clm-filter-group">
-            <label><?php _e('Filter by:', 'choir-lyrics-manager'); ?></label>
-            <select id="clm-skill-filter" onchange="filterSkills(this.value)">
-                <option value=""><?php _e('All Levels', 'choir-lyrics-manager'); ?></option>
-                <?php foreach ($skill_levels as $level => $info): ?>
-                    <option value="<?php echo $level; ?>" <?php selected($filter_level, $level); ?>>
-                        <?php echo $info['label']; ?> (<?php echo $skill_stats[$level]; ?>)
+
+    <!-- Individual Song Skills Section -->
+    <div class="clm-song-skills-section">
+        <h3><?php _e('My Song Skills', 'choir-lyrics-manager'); ?></h3>
+        <form method="get" class="clm-skills-filter-form">
+            <input type="hidden" name="page" value="clm_my_skills_page">
+            <label for="clm-skill-filter-select" class="screen-reader-text"><?php _e('Filter by Level:', 'choir-lyrics-manager'); ?></label>
+            <select id="clm-skill-filter-select" name="skill_level">
+                <option value=""><?php _e('All Skill Levels', 'choir-lyrics-manager'); ?></option>
+                <?php foreach ($skill_levels_map as $level_key_map => $level_info_map):
+                     if ($level_key_map === 'unknown' && $skill_counts_summary[$level_key_map] === 0 && empty($filter_level_req)) continue; // Hide unknown if no skills and not filtered
+                ?>
+                    <option value="<?php echo esc_attr($level_key_map); ?>" <?php selected($filter_level_req, $level_key_map); ?>>
+                        <?php echo esc_html($level_info_map['label']); ?> (<?php echo esc_html($skill_counts_summary[$level_key_map]); ?>)
                     </option>
                 <?php endforeach; ?>
             </select>
-        </div>
-        
-        <div class="clm-filter-group">
-            <label><?php _e('Sort by:', 'choir-lyrics-manager'); ?></label>
-            <select id="clm-skill-sort" onchange="sortSkills(this.value)">
-                <option value="title" <?php selected($sort_by, 'title'); ?>><?php _e('Song Title', 'choir-lyrics-manager'); ?></option>
-                <option value="level" <?php selected($sort_by, 'level'); ?>><?php _e('Skill Level', 'choir-lyrics-manager'); ?></option>
-                <option value="practice" <?php selected($sort_by, 'practice'); ?>><?php _e('Practice Count', 'choir-lyrics-manager'); ?></option>
-                <option value="recent" <?php selected($sort_by, 'recent'); ?>><?php _e('Recently Practiced', 'choir-lyrics-manager'); ?></option>
+            <label for="clm-skill-sort-select" class="screen-reader-text"><?php _e('Sort by:', 'choir-lyrics-manager'); ?></label>
+            <select id="clm-skill-sort-select" name="sort">
+                <option value="title" <?php selected($sort_by_req, 'title'); ?>><?php _e('Song Title (A-Z)', 'choir-lyrics-manager'); ?></option>
+                <option value="level" <?php selected($sort_by_req, 'level'); ?>><?php _e('Skill Level (Highest First)', 'choir-lyrics-manager'); ?></option>
+                <option value="practice" <?php selected($sort_by_req, 'practice'); ?>><?php _e('Practice Count (Most First)', 'choir-lyrics-manager'); ?></option>
+                <option value="recent" <?php selected($sort_by_req, 'recent'); ?>><?php _e('Recently Practiced (Newest First)', 'choir-lyrics-manager'); ?></option>
             </select>
-        </div>
-    </div>
-    
-    <div class="clm-skills-list">
-        <?php if (empty($member_skills)): ?>
-            <div class="clm-no-skills">
-                <span class="dashicons dashicons-music"></span>
-                <h3><?php _e('No skills recorded yet', 'choir-lyrics-manager'); ?></h3>
-                <p><?php _e('Start practicing some songs to track your progress!', 'choir-lyrics-manager'); ?></p>
-                <a href="<?php echo get_post_type_archive_link('clm_lyric'); ?>" class="clm-button">
-                    <?php _e('Browse Songs', 'choir-lyrics-manager'); ?>
+            <?php submit_button(__('Filter / Sort', 'choir-lyrics-manager'), 'secondary small', 'clm_apply_skill_filters_button', false); ?>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=clm_my_skills_page')); ?>" class="button button-link"><?php _e('Reset', 'choir-lyrics-manager'); ?></a>
+        </form>
+
+        <?php if (empty($member_skills_data)): ?>
+            <div class="clm-no-items-message clm-no-skills">
+                <span class="dashicons dashicons-edit-page"></span>
+                <h4><?php _e('No Skills Recorded Yet', 'choir-lyrics-manager'); ?></h4>
+                <p><?php _e('When you log practice for songs, your skill progress will appear here.', 'choir-lyrics-manager'); ?></p>
+                <a href="<?php echo esc_url(admin_url('edit.php?post_type=clm_lyric')); ?>" class="button button-primary">
+                    <?php _e('Browse Lyrics to Practice', 'choir-lyrics-manager'); ?>
                 </a>
             </div>
         <?php else: ?>
-            <div class="clm-skills-grid">
-                <?php foreach ($member_skills as $skill): 
-                    $level_info = $skill_levels[$skill->skill_level];
-                    ?>
-                    <div class="clm-skill-card" data-level="<?php echo $skill->skill_level; ?>">
-                        <div class="clm-skill-header">
-                            <h3 class="clm-skill-title">
-                                <a href="<?php echo get_permalink($skill->lyric_id); ?>">
-                                    <?php echo esc_html($skill->lyric_title); ?>
-                                </a>
-                            </h3>
-                            <div class="clm-skill-level" style="background-color: <?php echo $level_info['color']; ?>">
-                                <span class="dashicons <?php echo $level_info['icon']; ?>"></span>
-                                <?php echo $level_info['label']; ?>
+            <div class="clm-skills-list">
+                <?php foreach ($member_skills_data as $skill_item):
+                    if (empty($skill_item->lyric_id) || empty($skill_item->lyric_title)) continue;
+                    $level_info_display = $skills_instance->get_skill_level_info($skill_item->skill_level);
+                ?>
+                    <div class="clm-skill-item" data-skill-level="<?php echo esc_attr($skill_item->skill_level); ?>">
+                        <div class="clm-skill-item-header">
+                            <h4 class="clm-skill-lyric-title"><a href="<?php echo get_permalink($skill_item->lyric_id); ?>#clm-practice-tracker-anchor" title="<?php esc_attr_e('View or Practice this Lyric', 'choir-lyrics-manager'); ?>"><?php echo esc_html($skill_item->lyric_title); ?></a></h4>
+                            <span class="clm-skill-level-badge" style="background-color: <?php echo esc_attr($level_info_display['color']); ?>;">
+                                <span class="dashicons <?php echo esc_attr($level_info_display['icon']); ?>"></span>
+                                <?php echo esc_html($level_info_display['label']); ?>
+                            </span>
+                        </div>
+                        <div class="clm-skill-item-details">
+                            <div class="clm-skill-progress-bar-container">
+                                <div class="clm-progress-bar">
+                                    <div class="clm-progress-fill" 
+                                    style="width: <?php echo esc_attr($level_info_display['progress'] ?? 0); ?>%; background-color: <?php echo esc_attr($level_info_display['color']); ?>;" 
+                                    title="<?php 
+                                        // Prepare the parts for sprintf
+                                        $progress_percentage = esc_attr($level_info_display['progress'] ?? 0);
+                                        $level_label = esc_html($level_info_display['label'] ?? __('Unknown Level', 'choir-lyrics-manager'));
+                                        // Get the translated string with placeholders
+                                        $title_string_format = __('%s%% towards %s', 'choir-lyrics-manager');
+                                        // Output the formatted and escaped string
+                                        printf(esc_attr($title_string_format), $progress_percentage, $level_label); 
+                                    ?>">
+                                </div>                                
                             </div>
                         </div>
-                        
-                        <div class="clm-skill-stats">
-                            <div class="clm-stat">
-                                <span class="dashicons dashicons-chart-line"></span>
-                                <?php echo sprintf(__('%d practice sessions', 'choir-lyrics-manager'), $skill->practice_count); ?>
+                            <div class="clm-skill-meta">
+                                <span><span class="dashicons dashicons-controls-repeat"></span> <?php printf(_n('%s Session', '%s Sessions', $skill_item->practice_count ?? 0, 'choir-lyrics-manager'), esc_html($skill_item->practice_count ?? 0)); ?></span>
+                                <span><span class="dashicons dashicons-clock"></span> <?php echo esc_html($skills_instance->format_minutes($skill_item->total_practice_minutes ?? 0)); ?></span>
+                                <?php if (!empty($skill_item->last_practice_date)): ?>
+                                    <span><span class="dashicons dashicons-calendar-alt"></span> <?php echo human_time_diff(strtotime($skill_item->last_practice_date)); ?> <?php _e('ago', 'choir-lyrics-manager'); ?></span>
+                                <?php endif; ?>
                             </div>
-                            
-                            <?php if ($skill->last_practice_date): ?>
-                                <div class="clm-stat">
-                                    <span class="dashicons dashicons-calendar-alt"></span>
-                                    <?php echo sprintf(
-                                        __('Last: %s', 'choir-lyrics-manager'),
-                                        human_time_diff(strtotime($skill->last_practice_date), current_time('timestamp')) . ' ' . __('ago', 'choir-lyrics-manager')
-                                    ); ?>
+                            <?php if (!empty($skill_item->goal_date)): ?>
+                                <div class="clm-skill-goal">
+                                    <strong><span class="dashicons dashicons-flag"></span> <?php _e('Goal:', 'choir-lyrics-manager'); ?></strong>
+                                    <?php echo date_i18n(get_option('date_format'), strtotime($skill_item->goal_date)); ?>
                                 </div>
                             <?php endif; ?>
-                            
-                            <?php if ($skill->performance_count > 0): ?>
-                                <div class="clm-stat">
-                                    <span class="dashicons dashicons-microphone"></span>
-                                    <?php echo sprintf(__('%d performances', 'choir-lyrics-manager'), $skill->performance_count); ?>
-                                </div>
-                            <?php endif; ?>
                         </div>
-                        
-                        <div class="clm-skill-progress">
-                            <div class="clm-progress-timeline">
-                                <?php foreach ($skill_levels as $level => $info): ?>
-                                    <div class="clm-timeline-step <?php echo $skill->skill_level === $level ? 'current' : ''; ?> <?php echo array_search($level, array_keys($skill_levels)) < array_search($skill->skill_level, array_keys($skill_levels)) ? 'completed' : ''; ?>">
-                                        <span class="dashicons <?php echo $info['icon']; ?>"></span>
-                                        <span class="clm-step-label"><?php echo $info['label']; ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="clm-skill-actions">
-                            <a href="<?php echo get_permalink($skill->lyric_id); ?>" class="clm-button clm-button-small">
-                                <?php _e('Practice', 'choir-lyrics-manager'); ?>
+                        <div class="clm-skill-item-actions">
+                             <a href="<?php echo get_permalink($skill_item->lyric_id); ?>#clm-practice-tracker-anchor" class="clm-button clm-button-small clm-button-secondary">
+                                <span class="dashicons dashicons-edit-page"></span> <?php _e('Practice', 'choir-lyrics-manager'); ?>
                             </a>
-                            <button class="clm-button clm-button-small clm-button-secondary clm-view-details" data-skill-id="<?php echo $skill->id; ?>">
-                                <?php _e('Details', 'choir-lyrics-manager'); ?>
+                            <button type="button" class="clm-button clm-button-small clm-set-skill-goal-button" data-lyric-id="<?php echo esc_attr($skill_item->lyric_id); ?>" data-current-goal="<?php echo esc_attr($skill_item->goal_date ?? ''); ?>">
+                                 <span class="dashicons dashicons-flag"></span> <?php echo (!empty($skill_item->goal_date)) ? __('Change Goal', 'choir-lyrics-manager') : __('Set Goal', 'choir-lyrics-manager'); ?>
                             </button>
                         </div>
-                        
-                        <?php if ($skill->teacher_notes): ?>
-                            <div class="clm-teacher-notes">
-                                <strong><?php _e('Teacher Notes:', 'choir-lyrics-manager'); ?></strong>
-                                <p><?php echo esc_html($skill->teacher_notes); ?></p>
+                         <div id="clm-set-goal-form-container-<?php echo esc_attr($skill_item->lyric_id); ?>" class="clm-set-goal-form" style="display:none;">
+                            <label for="clm-goal-date-input-<?php echo esc_attr($skill_item->lyric_id); ?>"><?php _e('New Goal Date:','choir-lyrics-manager'); ?></label>
+                            <input type="date" class="clm-goal-date-input" id="clm-goal-date-input-<?php echo esc_attr($skill_item->lyric_id); ?>" value="<?php echo esc_attr($skill_item->goal_date ?? date('Y-m-d', strtotime('+1 month'))); ?>" min="<?php echo date('Y-m-d'); ?>">
+                            <div class="clm-goal-form-actions">
+                                <button type="button" class="clm-submit-new-goal clm-button clm-button-primary clm-button-small" data-lyric-id="<?php echo esc_attr($skill_item->lyric_id); ?>"><?php _e('Save Goal','choir-lyrics-manager'); ?></button>
+                                <button type="button" class="clm-cancel-new-goal clm-button-text"><?php _e('Cancel','choir-lyrics-manager'); ?></button>
                             </div>
-                        <?php endif; ?>
+                            <div class="clm-set-goal-message" style="display:none;"></div>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </div>
+
+    <div class="clm-recent-practice-section">
+        <h3><?php _e('My Recent Practice Sessions', 'choir-lyrics-manager'); ?></h3>
+        <?php
+        $recent_practices = array();
+        if ($practice_instance && method_exists($practice_instance, 'get_member_recent_practice_sessions')) {
+            $recent_practices = $practice_instance->get_member_recent_practice_sessions($member_post->ID, 5);
+        }
+        if (empty($recent_practices)): ?>
+            <p class="clm-no-items-message"><?php _e('No recent practice sessions recorded.', 'choir-lyrics-manager'); ?></p>
+        <?php else: ?>
+            <ul class="clm-practice-list">
+                <?php foreach ($recent_practices as $practice_session):
+                    $lyric_for_history = get_post($practice_session->lyric_id);
+                    if (!$lyric_for_history) continue;
+                    ?>
+                    <li>
+                        <a href="<?php echo get_permalink($lyric_for_history->ID); ?>#clm-practice-tracker-anchor" class="clm-practice-title"><?php echo esc_html($lyric_for_history->post_title); ?></a>
+                        <span class="clm-practice-duration"><?php echo esc_html($practice_instance ? $practice_instance->format_duration($practice_session->duration ?? 0) : ($practice_session->duration ?? 0) . ' mins'); ?></span>
+                        <span class="clm-practice-date"><?php echo human_time_diff(strtotime($practice_session->practice_date)); ?> <?php _e('ago', 'choir-lyrics-manager'); ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
 </div>
-
-<style>
-/* Skills tab specific styles */
-.clm-skills-header {
-    margin-bottom: 30px;
-}
-
-.clm-skills-summary {
-    margin-top: 20px;
-}
-
-.clm-summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.clm-summary-card {
-    text-align: center;
-    padding: 20px;
-    border: 2px solid;
-    border-radius: 8px;
-    background: white;
-}
-
-.clm-summary-icon {
-    font-size: 36px;
-    margin-bottom: 10px;
-}
-
-.clm-summary-count {
-    font-size: 32px;
-    font-weight: bold;
-    color: #333;
-}
-
-.clm-summary-label {
-    font-size: 16px;
-    font-weight: 500;
-    color: #333;
-}
-
-.clm-summary-desc {
-    font-size: 12px;
-    color: #666;
-    margin-top: 5px;
-}
-
-.clm-skills-progress {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.clm-progress-bar {
-    height: 30px;
-    background: #f0f0f0;
-    border-radius: 15px;
-    overflow: hidden;
-    display: flex;
-    margin-bottom: 10px;
-}
-
-.clm-progress-segment {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.clm-progress-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #666;
-}
-
-.clm-skills-filters {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-}
-
-.clm-filter-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.clm-filter-group label {
-    font-weight: 500;
-}
-
-.clm-filter-group select {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.clm-skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
-}
-
-.clm-skill-card {
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 20px;
-    transition: all 0.3s ease;
-}
-
-.clm-skill-card:hover {
-    border-color: #007cba;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.clm-skill-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 15px;
-}
-
-.clm-skill-title {
-    margin: 0;
-    font-size: 18px;
-}
-
-.clm-skill-title a {
-    text-decoration: none;
-    color: #333;
-}
-
-.clm-skill-title a:hover {
-    color: #007cba;
-}
-
-.clm-skill-level {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 20px;
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.clm-skill-level .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-}
-
-.clm-skill-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.clm-stat {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #666;
-}
-
-.clm-stat .dashicons {
-    color: #007cba;
-}
-
-.clm-skill-progress {
-    margin-bottom: 15px;
-}
-
-.clm-progress-timeline {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-}
-
-.clm-timeline-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    opacity: 0.4;
-    position: relative;
-}
-
-.clm-timeline-step.completed,
-.clm-timeline-step.current {
-    opacity: 1;
-}
-
-.clm-timeline-step .dashicons {
-    font-size: 24px;
-    color: #999;
-}
-
-.clm-timeline-step.completed .dashicons {
-    color: #46b450;
-}
-
-.clm-timeline-step.current .dashicons {
-    color: #007cba;
-}
-
-.clm-step-label {
-    font-size: 11px;
-    text-align: center;
-}
-
-.clm-skill-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.clm-button-small {
-    padding: 5px 15px;
-    font-size: 14px;
-}
-
-.clm-teacher-notes {
-    margin-top: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-.clm-teacher-notes p {
-    margin: 5px 0 0;
-}
-
-.clm-no-skills {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.clm-no-skills .dashicons {
-    font-size: 64px;
-    width: 64px;
-    height: 64px;
-    color: #ddd;
-    margin-bottom: 20px;
-}
-
-.clm-no-skills h3 {
-    color: #666;
-    margin-bottom: 10px;
-}
-
-.clm-no-skills p {
-    color: #999;
-    margin-bottom: 20px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .clm-skills-filters {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .clm-skills-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .clm-summary-cards {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 480px) {
-    .clm-summary-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .clm-skill-header {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .clm-skill-actions {
-        flex-direction: column;
-    }
-    
-    .clm-button-small {
-        width: 100%;
-    }
-}
-</style>
-
-<script>
-function filterSkills(level) {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (level) {
-        urlParams.set('skill_level', level);
-    } else {
-        urlParams.delete('skill_level');
-    }
-    urlParams.set('tab', 'skills');
-    window.location.search = urlParams.toString();
-}
-
-function sortSkills(sortBy) {
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('sort', sortBy);
-    urlParams.set('tab', 'skills');
-    window.location.search = urlParams.toString();
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle skill details modal
-    const detailButtons = document.querySelectorAll('.clm-view-details');
-    detailButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Implement modal or expand details here
-            alert('Details functionality coming soon!');
-        });
-    });
-});
-</script>

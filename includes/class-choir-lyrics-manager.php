@@ -1,396 +1,244 @@
 <?php
 /**
- * The core plugin class - Fixed version with proper Events integration
- *
- * This is used to define internationalization, admin-specific hooks,
- * and public-facing site hooks.
- *
- * @since      1.0.0
- * @package    Choir_Lyrics_Manager
+ * The core plugin class - Revised
  */
 
 class Choir_Lyrics_Manager {
 
-    /**
-     * The loader that's responsible for maintaining and registering all hooks.
-     *
-     * @since    1.0.0
-     * @access   protected
-     * @var      CLM_Loader    $loader    Maintains and registers all hooks for the plugin.
-     */
     protected $loader;
-
-    /**
-     * The unique identifier of this plugin.
-     *
-     * @since    1.0.0
-     * @access   protected
-     * @var      string    $plugin_name    The string used to uniquely identify this plugin.
-     */
     protected $plugin_name;
-
-    /**
-     * The current version of the plugin.
-     *
-     * @since    1.0.0
-     * @access   protected
-     * @var      string    $version    The current version of the plugin.
-     */
     protected $version;
 
-    /**
-     * Define the core functionality of the plugin.
-     *
-     * Load the dependencies, define the locale, and set the hooks.
-     *
-     * @since    1.0.0
-     */
+    // Store instances of the primary admin and public controllers
+    protected $clm_admin_controller;
+    protected $clm_public_controller;
+
     public function __construct() {
         $this->plugin_name = 'choir-lyrics-manager';
-        $this->version = CLM_VERSION;
+        $this->version = defined('CLM_VERSION') ? CLM_VERSION : '1.0.0';
 
-        $this->load_dependencies();
+        // 1. Load the Loader class first
+        require_once CLM_PLUGIN_DIR . 'includes/class-clm-loader.php';
+        $this->loader = new CLM_Loader(); // Instantiate the loader
+
+        // 2. Load all other dependencies
+        $this->load_other_dependencies();
+
+        // 3. Instantiate primary controllers (Admin and Public)
+        // These classes might register some of their own hooks in their constructors,
+        // or we will explicitly register their methods later.
+        // For this boilerplate, hooks are usually registered via the loader.
+        $this->clm_admin_controller = new CLM_Admin($this->get_plugin_name(), $this->get_version());
+        $this->clm_public_controller = new CLM_Public($this->get_plugin_name(), $this->get_version());
+
+        // 4. Set up locale
         $this->set_locale();
-        $this->define_admin_hooks();
-        $this->define_public_hooks();
+
+        // 5. Define hooks by telling the loader about methods in our component classes
+        $this->define_data_structure_hooks(); // For CPTs, Taxonomies (run on init)
+        $this->define_admin_specific_hooks();   // For admin UI, meta boxes, admin AJAX
+        $this->define_public_facing_hooks();  // For frontend display, shortcodes, public AJAX
+
+        // 6. Initialize any standalone helpers
         $this->init_helpers();
     }
 
     /**
-     * Load the required dependencies for this plugin.
-     *
-     * Include the following files that make up the plugin:
-     *
-     * - CLM_Loader. Orchestrates the hooks of the plugin.
-     * - CLM_i18n. Defines internationalization functionality.
-     * - CLM_Admin. Defines all hooks for the admin area.
-     * - CLM_Public. Defines all hooks for the public side of the site.
-     *
-     * @since    1.0.0
-     * @access   private
+     * Load all dependencies EXCEPT the loader (which is loaded first).
      */
-    private function load_dependencies() {
-        /**
-         * The class responsible for orchestrating the actions and filters of the
-         * core plugin.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-loader.php';
+    private function load_other_dependencies() {
+        $base_dir = CLM_PLUGIN_DIR . 'includes/';
+        $admin_dir = CLM_PLUGIN_DIR . 'admin/';
 
-        /**
-         * The class responsible for defining internationalization functionality
-         * of the plugin.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-i18n.php';
+        // Order matters if classes depend on each other during instantiation (e.g. CLM_Public needing CLM_Settings)
+		require_once $base_dir . 'class-clm-user-management.php';
+        require_once $base_dir . 'class-clm-i18n.php';
+        require_once $base_dir . 'class-clm-settings.php'; // Load Settings before Public if Public uses it in constructor
+        require_once $base_dir . 'class-clm-invitation-codes.php';
+		
+        require_once $base_dir . 'class-clm-cpt.php';
+        require_once $base_dir . 'class-clm-taxonomies.php';
+        require_once $base_dir . 'class-clm-members.php';
+        require_once $base_dir . 'class-clm-events.php';
+        require_once $base_dir . 'class-clm-albums.php';
+        require_once $base_dir . 'class-clm-skills.php';
+        require_once $base_dir . 'class-clm-practice.php';
+        require_once $base_dir . 'class-clm-playlists.php';
+
+        require_once $base_dir . 'class-clm-media.php';
+        require_once $base_dir . 'class-clm-submissions.php';
+        require_once $base_dir . 'class-clm-analytics.php';
+        require_once $base_dir . 'class-clm-roles.php';
+        require_once $base_dir . 'class-clm-media-helper.php';
+
+        // Load Admin and Public controller classes themselves
+        require_once $admin_dir . 'class-clm-admin.php'; // This is $this->clm_admin_controller
+        require_once $base_dir . 'class-clm-public.php'; // This is $this->clm_public_controller
+
+        // Other admin components
+        require_once $admin_dir . 'class-clm-admin-members.php';
+        require_once $admin_dir . 'class-clm-album-admin.php';
         
-        /**
-         * The class responsible for defining activation functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-activator.php';
-        
-        /**
-         * The class responsible for defining deactivation functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-deactivator.php';
-
-        /**
-         * The class responsible for defining all custom post types.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-cpt.php';
-
-        /**
-         * The class responsible for defining all custom taxonomies.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-taxonomies.php';
-
-        /**
-         * The class responsible for handling media uploads and embeds.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-media.php';
-
-        /**
-         * The class responsible for handling lyric submissions.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-submissions.php';
-
-        /**
-         * The class responsible for playlist and bookmark functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-playlists.php';
-
-        /**
-         * The class responsible for practice tracking functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-practice.php';
-
-        /**
-         * The class responsible for analytics collection and display.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-analytics.php';
-
-        /**
-         * The class responsible for role and capability management.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-roles.php';
-
-        /**
-         * The class responsible for plugin settings.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-settings.php';
-
-        /**
-         * The class responsible for member management.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-members.php';
-
-        /**
-         * The class responsible for skills tracking.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-skills.php';
-
-        /**
-         * The class responsible for event management.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-events.php';
-
-        /**
-         * The class responsible for member admin functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-admin-members.php';
-
-        /**
-         * The class responsible for admin-specific functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-admin.php';
-
-        /**
-         * The class responsible for public-facing functionality.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-public.php';
-
-        /**
-         * The class responsible for media helper functions.
-         */
-        require_once CLM_PLUGIN_DIR . 'includes/class-clm-media-helper.php';
-
-        $this->loader = new CLM_Loader();
+        // Activator/Deactivator are for plugin lifecycle, not typically instantiated during regular runtime
+        // require_once $base_dir . 'class-clm-activator.php';
+        // require_once $base_dir . 'class-clm-deactivator.php';
     }
 
-    /**
-     * Define the locale for this plugin for internationalization.
-     *
-     * Uses the CLM_i18n class in order to set the domain and to register the hook
-     * with WordPress.
-     *
-     * @since    1.0.0
-     * @access   private
-     */
+
     private function set_locale() {
         $plugin_i18n = new CLM_i18n();
         $plugin_i18n->set_domain($this->get_plugin_name());
-
         $this->loader->add_action('plugins_loaded', $plugin_i18n, 'load_plugin_textdomain');
     }
 
     /**
-     * Register all of the hooks related to the admin area functionality
-     * of the plugin.
-     *
-     * @since    1.0.0
-     * @access   private
+     * Hooks for defining data structures (CPTs, Taxonomies).
+     * These are all hooked to 'init'.
      */
-    private function define_admin_hooks() {
-        // Admin class hooks
-        $plugin_admin = new CLM_Admin($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
-        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
-        $this->loader->add_action('admin_menu', $plugin_admin, 'add_plugin_admin_menu');
-        
-        // CPT hooks
-        $plugin_cpt = new CLM_CPT($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('init', $plugin_cpt, 'register_post_types');
-        $this->loader->add_filter('manage_clm_lyric_posts_columns', $plugin_cpt, 'set_custom_lyric_columns');
-        $this->loader->add_action('manage_clm_lyric_posts_custom_column', $plugin_cpt, 'custom_lyric_column', 10, 2);
-        
-        // Taxonomies hooks
-        $plugin_taxonomies = new CLM_Taxonomies($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('init', $plugin_taxonomies, 'register_taxonomies');
-        
-        // Members hooks
-        $plugin_members = new CLM_Members($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('init', $plugin_members, 'register_member_cpt');
-        $this->loader->add_action('init', $plugin_members, 'register_voice_type_taxonomy');
-        $this->loader->add_action('add_meta_boxes', $plugin_members, 'register_member_meta_boxes');
-        $this->loader->add_action('save_post', $plugin_members, 'save_member_meta');
-        $this->loader->add_filter('manage_clm_member_posts_columns', $plugin_members, 'set_custom_member_columns');
-        $this->loader->add_action('manage_clm_member_posts_custom_column', $plugin_members, 'custom_member_column', 10, 2);
-        $this->loader->add_action('admin_head', $plugin_members, 'add_member_admin_styles');
-        
-        // Member admin hooks
-        $plugin_admin_members = new CLM_Admin_Members($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('admin_menu', $plugin_admin_members, 'add_admin_menu');
-        
-        // Skills hooks
-        $plugin_skills = new CLM_Skills($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('add_meta_boxes', $plugin_skills, 'add_skills_meta_box');
-        $this->loader->add_action('admin_enqueue_scripts', $plugin_skills, 'enqueue_admin_scripts');
-        $this->loader->add_action('wp_ajax_clm_update_skill', $plugin_skills, 'ajax_update_skill');
-        $this->loader->add_action('wp_ajax_clm_log_practice', $plugin_skills, 'ajax_log_practice');
-        
-        // Events hooks
-        $plugin_events = new CLM_Events($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('init', $plugin_events, 'register_event_post_type');
-        $this->loader->add_action('init', $plugin_events, 'register_event_taxonomies');
-        $this->loader->add_action('add_meta_boxes', $plugin_events, 'add_event_meta_boxes');
-        $this->loader->add_action('save_post', $plugin_events, 'save_event_meta');
-        $this->loader->add_filter('manage_clm_event_posts_columns', $plugin_events, 'add_event_columns');
-        $this->loader->add_action('manage_clm_event_posts_custom_column', $plugin_events, 'display_event_columns', 10, 2);
-        $this->loader->add_filter('manage_edit-clm_event_sortable_columns', $plugin_events, 'make_event_columns_sortable');
-        $this->loader->add_action('pre_get_posts', $plugin_events, 'handle_event_column_sorting');
-        
-        // Media hooks
-        $plugin_media = new CLM_Media($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('add_meta_boxes', $plugin_media, 'add_media_meta_boxes');
-        $this->loader->add_action('save_post', $plugin_media, 'save_media_meta');
-        
-        // Submissions hooks
-        $plugin_submissions = new CLM_Submissions($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('admin_post_clm_submit_lyric', $plugin_submissions, 'process_lyric_submission');
-        $this->loader->add_action('admin_post_nopriv_clm_submit_lyric', $plugin_submissions, 'process_lyric_submission');
-        
-        // Playlists hooks
-        $plugin_playlists = new CLM_Playlists($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('wp_ajax_clm_add_to_playlist', $plugin_playlists, 'add_to_playlist');
-        $this->loader->add_action('wp_ajax_clm_remove_from_playlist', $plugin_playlists, 'remove_from_playlist');
-        
-        // Practice tracking hooks
-        $plugin_practice = new CLM_Practice($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('wp_ajax_clm_update_practice_log', $plugin_practice, 'update_practice_log');
-        
-        // Analytics hooks
-        $plugin_analytics = new CLM_Analytics($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('wp_ajax_clm_get_analytics', $plugin_analytics, 'get_analytics_data');
-        
-        // Roles hooks
-        $plugin_roles = new CLM_Roles($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('admin_init', $plugin_roles, 'add_custom_roles');
-        
-        // Settings hooks
-        $plugin_settings = new CLM_Settings($this->get_plugin_name(), $this->get_version());
+    private function define_data_structure_hooks() {
+        $clm_cpt = new CLM_CPT($this->plugin_name, $this->version);
+        $this->loader->add_action('init', $clm_cpt, 'register_post_types');
+
+        $clm_taxonomies = new CLM_Taxonomies($this->plugin_name, $this->version);
+        $this->loader->add_action('init', $clm_taxonomies, 'register_taxonomies');
+
+        $clm_members = new CLM_Members($this->plugin_name, $this->version);
+        $this->loader->add_action('init', $clm_members, 'register_member_cpt');
+        $this->loader->add_action('init', $clm_members, 'register_voice_type_taxonomy');
+
+        $clm_events = new CLM_Events($this->plugin_name, $this->version);
+        $this->loader->add_action('init', $clm_events, 'register_event_post_type');
+        $this->loader->add_action('init', $clm_events, 'register_event_taxonomies');
+
+        $clm_albums = new CLM_Albums($this->plugin_name, $this->version);
+        $this->loader->add_action('init', $clm_albums, 'register_post_type_and_taxonomy');
+    }
+
+    /**
+     * Hooks related to the admin area functionality.
+     */
+    private function define_admin_specific_hooks() {
+        // Use the pre-instantiated admin controller
+        $this->loader->add_action('admin_enqueue_scripts', $this->clm_admin_controller, 'enqueue_styles');
+        $this->loader->add_action('admin_enqueue_scripts', $this->clm_admin_controller, 'enqueue_scripts');
+        $this->loader->add_action('admin_menu', $this->clm_admin_controller, 'add_plugin_admin_menu');
+
+		$clm_invitation_codes = new CLM_Invitation_Codes($this->plugin_name, $this->version, $this->loader);
+		$clm_invitation_codes->init();
+   
+        $plugin_settings = new CLM_Settings($this->plugin_name, $this->version);
         $this->loader->add_action('admin_init', $plugin_settings, 'register_settings');
+
+        // Components for admin UI (meta boxes, columns, admin-specific AJAX)
+        $clm_cpt = new CLM_CPT($this->plugin_name, $this->version); // For Lyric admin columns
+        $this->loader->add_filter('manage_clm_lyric_posts_columns', $clm_cpt, 'set_custom_lyric_columns');
+        $this->loader->add_action('manage_clm_lyric_posts_custom_column', $clm_cpt, 'custom_lyric_column', 10, 2);
+        // Note: CLM_CPT's own register_meta_boxes method is hooked to 'add_meta_boxes' within its register_post_types method.
+
+        $clm_members = new CLM_Members($this->plugin_name, $this->version); // For Member admin UI
+        $this->loader->add_action('add_meta_boxes_clm_member', $clm_members, 'register_member_meta_boxes');
+        $this->loader->add_action('save_post_clm_member', $clm_members, 'save_member_meta');
+        $this->loader->add_filter('manage_clm_member_posts_columns', $clm_members, 'set_custom_member_columns');
+        // ... other clm_members admin hooks ...
+        $clm_admin_members = new CLM_Admin_Members($this->plugin_name, $this->version);
+        $this->loader->add_action('admin_menu', $clm_admin_members, 'add_admin_menu');
+
+
+        $clm_albums = new CLM_Albums($this->plugin_name, $this->version); // For Album CPT slug
+        if (class_exists('CLM_Album_Admin')) {
+            $clm_album_admin = new CLM_Album_Admin($this->plugin_name, $this->version);
+            $album_cpt_slug = $clm_albums->album_cpt_slug;
+            $this->loader->add_action('add_meta_boxes_' . $album_cpt_slug, $clm_album_admin, 'add_meta_boxes');
+            $this->loader->add_action('save_post_' . $album_cpt_slug, $clm_album_admin, 'save_meta_data');
+            // ... other CLM_Album_Admin hooks ...
+             $this->loader->add_filter('manage_' . $album_cpt_slug . '_posts_columns', $clm_album_admin, 'add_admin_columns');
+             $this->loader->add_action('manage_' . $album_cpt_slug . '_posts_custom_column', $clm_album_admin, 'display_admin_columns', 10, 2);
+             $this->loader->add_action('admin_enqueue_scripts', $clm_album_admin, 'enqueue_admin_assets');
+        }
+
+        $clm_media = new CLM_Media($this->plugin_name, $this->version);
+        $this->loader->add_action('add_meta_boxes_clm_lyric', $clm_media, 'add_media_meta_boxes');
+        $this->loader->add_action('save_post_clm_lyric', $clm_media, 'save_media_meta');
+
+        $clm_events = new CLM_Events($this->plugin_name, $this->version);
+        $this->loader->add_action('add_meta_boxes_clm_event', $clm_events, 'add_event_meta_boxes');
+        $this->loader->add_action('save_post_clm_event', $clm_events, 'save_event_meta');
+        // ... other clm_events admin hooks ...
+
+
+        $clm_skills = new CLM_Skills($this->plugin_name, $this->version);
+        // $this->loader->add_action('add_meta_boxes_clm_lyric', $clm_skills, 'add_skills_meta_box'); // If skills meta box on lyric edit
+        $this->loader->add_action('admin_enqueue_scripts', $clm_skills, 'enqueue_admin_scripts'); // For admin/js/skills.js
+        $this->loader->add_action('wp_ajax_clm_update_skill', $clm_skills, 'ajax_update_skill'); // Admin updates skill
+
+        // Submissions, Analytics, Roles
+        $clm_submissions = new CLM_Submissions($this->plugin_name, $this->version);
+        $this->loader->add_action('admin_post_clm_submit_lyric', $clm_submissions, 'process_lyric_submission');
+        $this->loader->add_action('admin_post_nopriv_clm_submit_lyric', $clm_submissions, 'process_lyric_submission');
+
+        $clm_analytics = new CLM_Analytics($this->plugin_name, $this->version);
+        $this->loader->add_action('wp_ajax_clm_get_analytics', $clm_analytics, 'get_analytics_data');
+
+        $clm_roles = new CLM_Roles($this->plugin_name, $this->version);
+        $this->loader->add_action('admin_init', $clm_roles, 'add_custom_roles');
     }
 
     /**
-     * Register all of the hooks related to the public-facing functionality
-     * of the plugin.
-     *
-     * @since    1.0.0
-     * @access   private
+     * Hooks related to the public-facing functionality.
      */
-    private function define_public_hooks() {
-        $plugin_public = new CLM_Public($this->get_plugin_name(), $this->get_version());
+    private function define_public_facing_hooks() {
+        // Use the pre-instantiated public controller
+        $this->loader->add_action('wp_enqueue_scripts', $this->clm_public_controller, 'enqueue_styles');
+        $this->loader->add_action('wp_enqueue_scripts', $this->clm_public_controller, 'enqueue_scripts');
+        $this->loader->add_action('init', $this->clm_public_controller, 'register_shortcodes');
+
+        // CLM_Public's constructor registers its own AJAX handlers ('clm_ajax_search', 'clm_ajax_filter', etc.)
+
+        // Template loading
+        $this->loader->add_filter('single_template', $this->clm_public_controller, 'load_lyric_template');
+        $this->loader->add_filter('archive_template', $this->clm_public_controller, 'load_archive_template');
+        $this->loader->add_filter('search_template', $this->clm_public_controller, 'load_search_template');
+
+        $clm_albums = new CLM_Albums($this->plugin_name, $this->version);
+        $this->loader->add_filter('single_template', $clm_albums, 'load_single_album_template');
+        $this->loader->add_filter('archive_template', $clm_albums, 'load_archive_album_template');
+        $this->loader->add_filter('taxonomy_template', $clm_albums, 'load_taxonomy_collection_template');
+        $this->loader->add_action('pre_get_posts', $clm_albums, 'clm_modify_archive_queries');
         
-        // Enqueue styles and scripts
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
-        
-        // Register shortcodes
-        $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
-        
-        // Register event shortcodes
-        $plugin_events = new CLM_Events($this->get_plugin_name(), $this->get_version());
-        $this->loader->add_action('init', $plugin_events, 'register_shortcodes');
-        
-        // Add template filters
-        $this->loader->add_filter('single_template', $plugin_public, 'load_lyric_template');
-        $this->loader->add_filter('archive_template', $plugin_public, 'load_archive_template');
-        $this->loader->add_filter('search_template', $plugin_public, 'load_search_template');
-        
-        // AJAX handlers
-        $this->loader->add_action('wp_ajax_clm_ajax_search', $plugin_public, 'handle_ajax_search');
-        $this->loader->add_action('wp_ajax_nopriv_clm_ajax_search', $plugin_public, 'handle_ajax_search');
-        $this->loader->add_action('wp_ajax_clm_ajax_filter', $plugin_public, 'handle_ajax_filter');
-        $this->loader->add_action('wp_ajax_nopriv_clm_ajax_filter', $plugin_public, 'handle_ajax_filter');
-        $this->loader->add_action('wp_ajax_clm_shortcode_filter', $plugin_public, 'handle_shortcode_filter');
-        $this->loader->add_action('wp_ajax_nopriv_clm_shortcode_filter', $plugin_public, 'handle_shortcode_filter');
-		$this->loader->add_action('wp_ajax_clm_test_nonce', $plugin_public, 'clm_test_nonce_handler');
-        $this->loader->add_action('wp_ajax_nopriv_clm_test_nonce', $plugin_public, 'clm_test_nonce_handler');
-		
-		// Add these to your AJAX registration
-		$this->loader->add_action('wp_ajax_clm_ajax_filter_test', $plugin_public, 'handle_ajax_filter_test');
-		$this->loader->add_action('wp_ajax_nopriv_clm_ajax_filter_test', $plugin_public, 'handle_ajax_filter_test');
-		
+        $clm_events = new CLM_Events($this->plugin_name, $this->version); // For event shortcodes if not in CLM_Public
+        $this->loader->add_action('init', $clm_events, 'register_shortcodes');
+
+
+        // Member-specific AJAX Handlers (for logged-in users on the frontend)
+        $clm_playlists = new CLM_Playlists($this->plugin_name, $this->version);
+        $this->loader->add_action('wp_ajax_clm_create_playlist', $clm_playlists, 'create_playlist');
+        $this->loader->add_action('wp_ajax_clm_add_to_playlist', $clm_playlists, 'add_to_playlist');
+        $this->loader->add_action('wp_ajax_clm_remove_from_playlist', $clm_playlists, 'remove_from_playlist');
+        $this->loader->add_action('wp_ajax_clm_delete_user_playlist', $clm_playlists, 'ajax_delete_user_playlist');
+
+        // If you implement other AJAX actions for playlists (update, reorder, delete), add them here:
+    // $this->loader->add_action('wp_ajax_clm_update_playlist_details', $clm_playlists, 'ajax_update_playlist_details');
+    // $this->loader->add_action('wp_ajax_clm_reorder_playlist_tracks', $clm_playlists, 'ajax_reorder_playlist_tracks');
+
+
+        $clm_practice = new CLM_Practice($this->plugin_name, $this->version);
+        $this->loader->add_action('wp_ajax_clm_log_lyric_practice', $clm_practice, 'ajax_log_lyric_practice');
+
+        $clm_skills = new CLM_Skills($this->plugin_name, $this->version);
+        $this->loader->add_action('wp_ajax_clm_set_lyric_skill_goal', $clm_skills, 'ajax_set_lyric_skill_goal');
     }
 
-
-public function clm_test_nonce_handler() {
-    $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
-    
-    // Test the nonce verification
-    $verify_result = wp_verify_nonce($nonce, 'clm_filter_nonce');
-    $ajax_check = check_ajax_referer('clm_filter_nonce', 'nonce', false);
-    
-    // Create a fresh nonce for comparison
-    $fresh_nonce = wp_create_nonce('clm_filter_nonce');
-    
-    wp_send_json_success(array(
-        'received_nonce' => $nonce,
-        'fresh_nonce' => $fresh_nonce,
-        'verify_result' => $verify_result,
-        'ajax_check' => $ajax_check,
-        'user_logged_in' => is_user_logged_in(),
-        'user_id' => get_current_user_id(),
-        'nonces_match' => ($nonce === $fresh_nonce),
-        'session_token' => wp_get_session_token(),
-    ));
-}
-    /**
-     * Initialize helper functions
-     *
-     * @since    1.0.0
-     * @access   private
-     */
     private function init_helpers() {
-        // Initialize media helper
-        CLM_Media_Helper::init();
+        if (class_exists('CLM_Media_Helper')) {
+            CLM_Media_Helper::init();
+        }
     }
 
-    /**
-     * Run the loader to execute all of the hooks with WordPress.
-     *
-     * @since    1.0.0
-     */
     public function run() {
         $this->loader->run();
     }
 
-    /**
-     * The name of the plugin used to uniquely identify it within the context of
-     * WordPress and to define internationalization functionality.
-     *
-     * @since     1.0.0
-     * @return    string    The name of the plugin.
-     */
-    public function get_plugin_name() {
-        return $this->plugin_name;
-    }
-
-    /**
-     * The reference to the class that orchestrates the hooks with the plugin.
-     *
-     * @since     1.0.0
-     * @return    CLM_Loader    Orchestrates the hooks of the plugin.
-     */
-    public function get_loader() {
-        return $this->loader;
-    }
-
-    /**
-     * Retrieve the version number of the plugin.
-     *
-     * @since     1.0.0
-     * @return    string    The version number of the plugin.
-     */
-    public function get_version() {
-        return $this->version;
-    }
+    public function get_plugin_name() { return $this->plugin_name; }
+    public function get_loader() { return $this->loader; }
+    public function get_version() { return $this->version; }
 }

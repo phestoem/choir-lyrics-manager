@@ -67,7 +67,7 @@ class CLM_Members {
             'public'                => false,
             'publicly_queryable'    => false,
             'show_ui'               => true,
-            'show_in_menu'          => true,
+            'show_in_menu'          => 'clm_dashboard',
             'show_in_nav_menus'     => false,
             'show_in_admin_bar'     => true,
             'menu_position'         => 26,
@@ -657,4 +657,37 @@ class CLM_Members {
             <?php
         }
     }
+	
+	
+	 /**
+     * Get the CLM Member CPT ID associated with a WordPress User ID.
+     *
+     * @param int $user_id WordPress User ID.
+     * @return int|null The Post ID of the clm_member CPT, or null if not found.
+     */
+    public function get_member_cpt_id_by_user_id( $user_id ) {
+        if ( ! $user_id ) {
+            return null;
+        }
+
+        $member_query = new WP_Query(array(
+            'post_type' => 'clm_member', // Assuming 'clm_member' is your Member CPT slug
+            'posts_per_page' => 1,
+            'meta_query' => array(
+                array(
+                    'key' => '_clm_wp_user_id', // The meta key storing the WP User ID on the Member CPT
+                    'value' => $user_id,
+                    'compare' => '=',
+                    'type' => 'NUMERIC',
+                ),
+            ),
+            'fields' => 'ids', // Only get post IDs
+        ));
+
+        if ( $member_query->have_posts() ) {
+            return $member_query->posts[0];
+        }
+        return null;
+    }
+
 }

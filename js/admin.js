@@ -11,180 +11,157 @@
      * Media uploader functionality
      */
     function initMediaUploader() {
-        var mediaUploader;
-        
-        // Handle the upload button click
-        $('.clm-upload-media').on('click', function(e) {
+        var mediaUploaderInstance; // Use a single instance, reconfigured each time
+
+        // Handle the UPLOAD/SELECT button click
+        $(document).on('click', '.clm-upload-media', function(e) { // Delegated for dynamically added elements
             e.preventDefault();
-            
-            var button = $(this);
-            var fieldType = button.data('type');
-            var title = button.data('title') || clm_admin_vars.text.upload_title;
-            var buttonText = button.data('button') || clm_admin_vars.text.upload_button;
-            var inputField = $('#clm_' + fieldType + '_id');
-            var previewContainer = $('#clm-' + fieldType + '-preview');
-            
-            // If the media uploader exists, open it
-            if (mediaUploader) {
-                mediaUploader.open();
+
+            var $button = $(this);
+            var fieldId = $button.data('field-id'); // Get target field ID
+            var previewId = $button.data('preview-id'); // Get target preview ID
+            var mediaType = $button.data('media-type') || 'file'; // 'file' for any, or 'image', 'audio', 'application/pdf' etc.
+            var uploaderTitle = $button.data('title') || ( (clm_admin_vars && clm_admin_vars.text && clm_admin_vars.text.upload_title) || 'Select File');
+            var uploaderButtonText = $button.data('button-text') || ( (clm_admin_vars && clm_admin_vars.text && clm_admin_vars.text.upload_button) || 'Use this file');
+
+            var $inputField = $('#' + fieldId);
+            var $previewContainer = $('#' + previewId);
+            var $removeButton = $('.clm-remove-media[data-field-id="' + fieldId + '"]'); // Find related remove button
+
+            if (!$inputField.length) {
+                console.error('CLM Admin: Target input field #' + fieldId + ' not found.');
                 return;
             }
-            
-            // Create the media uploader
-            mediaUploader = wp.media({
-                title: title,
+
+            // Create a new media uploader frame instance each time to allow for different library types
+            mediaUploaderInstance = wp.media({
+                title: uploaderTitle,
                 button: {
-                    text: buttonText
+                    text: uploaderButtonText
                 },
-                multiple: false // Set to true if you want multiple files
+                multiple: false,
+                library: mediaType !== 'file' ? { type: mediaType } : {} // Filter library if specific type provided
             });
-            
-            // When a file is selected
-            mediaUploader.on('select', function() {
-                var attachment = mediaUploader.state().get('selection').first().toJSON();
-                inputField.val(attachment.id);
-                
-                // Update the preview
-                updateMediaPreview(fieldType, attachment, previewContainer);
-                
-                // Show the remove button
-                $('.clm-remove-media[data-type="' + fieldType + '"]').show();
+
+            mediaUploaderInstance.on('select', function() {
+                var attachment = mediaUploaderInstance.state().get('selection').first().toJSON();
+                $inputField.val(attachment.id);
+
+                // Update the preview using a generic preview builder
+                var previewHtml = buildAdminMediaPreviewHtml(attachment);
+                if ($previewContainer.length) {
+                    $previewContainer.html(previewHtml);
+                } else { // Fallback if specific preview container not found, try to create one
+                    $button.after('<div class="clm-media-preview" id="' + previewId + '">' + previewHtml + '</div>');
+                }
+
+                if ($removeButton.length) $removeButton.show();
             });
-            
-            // Open the uploader
-            mediaUploader.open();
+
+            mediaUploaderInstance.open();
         });
-        
-        // Handle the remove button click
-        $('.clm-remove-media').on('click', function(e) {
+
+        // Handle the REMOVE button click
+        $(document).on('click', '.clm-remove-media', function(e) { // Delegated
             e.preventDefault();
-            
-            var button = $(this);
-            var fieldType = button.data('type');
-            var inputField = $('#clm_' + fieldType + '_id');
-            var previewContainer = $('#clm-' + fieldType + '-preview');
-            
-            // Clear the input field and preview
-            inputField.val('');
-            previewContainer.empty();
-            
-            // Hide the remove button
-            button.hide();
+            var $button = $(this);
+            var fieldId = $button.data('field-id');
+            var previewId = $button.data('preview-id');
+
+            $('#' + fieldId).val('');
+            $('#' + previewId).empty();
+            $button.hide();
         });
-        
-        // Handle practice track uploads
-        $('.clm-add-practice-track').on('click', function(e) {
+
+
+        // --- Practice Tracks ---
+        $(document).on('click', '.clm-add-practice-track', function(e) { // Delegated
             e.preventDefault();
-            
-            // Get the current number of tracks
-            var trackCount = $('.clm-practice-track-item').length;
-            
-            // Create a new track element using the template
-            var template = wp.template('clm-practice-track');
-            var newTrack = template({index: trackCount});
-            
-            // Add the new track to the container
-            $('#clm-practice-tracks-container').append(newTrack);
+            var $container = $('#clm-practice-tracks-container');
+            // Generate a unique index to avoid collisions if items are removed and re-added
+            var newIndex = $container.find('.clm-practice-track-item').length ? (Math.max(0, ...$container.find('.clm-practice-track-item').map(function() { return parseInt($(this).find('.clm-track-id-input').attr('name').match(/\[(\d+)\]/)[1]); }).get()) + 1) : 0;
+
+
+            if (typeof wp.template === 'function' && $('#tmpl-clm-practice-track-item').length) {
+                var template = wp.template('clm-practice-track-item'); // ID from PHP template
+                var newTrackHtml = template({ index: newIndex });
+                $container.append(newTrackHtml);
+            } else {
+                console.error('CLM Admin: Practice track Underscore template not found.');
+            }
         });
-        
-        // Handle practice track removal (delegated event)
-        $('#clm-practice-tracks-container').on('click', '.clm-remove-practice-track', function(e) {
+
+        $('#clm-practice-tracks-container').on('click', '.clm-remove-practice-track', function(e) { // Already delegated
             e.preventDefault();
-            
-            if (confirm(clm_admin_vars.text.confirm_delete)) {
+            if (confirm((clm_admin_vars && clm_admin_vars.text && clm_admin_vars.text.confirm_delete) || 'Are you sure you want to remove this track?')) {
                 $(this).closest('.clm-practice-track-item').remove();
             }
         });
-        
-        // Handle practice track upload button (delegated event)
-        $('#clm-practice-tracks-container').on('click', '.clm-upload-practice-track', function(e) {
+
+        $('#clm-practice-tracks-container').on('click', '.clm-upload-practice-track', function(e) { // Already delegated
             e.preventDefault();
-            
-            var button = $(this);
-            var trackItem = button.closest('.clm-practice-track-item');
-            var trackIndex = button.data('index');
-            var inputField = trackItem.find('input[name^="clm_practice_tracks"][name$="[id]"]');
-            var previewContainer = trackItem.find('.clm-practice-track-preview');
-            
-            // Create a media uploader for this track
+            var $button = $(this);
+            var $trackItem = $button.closest('.clm-practice-track-item');
+            var $inputField = $trackItem.find('.clm-track-id-input'); // Target by class
+            var $previewContainer = $trackItem.find('.clm-practice-track-preview'); // Target by class
+            var uploaderTitle = $button.data('title') || ((clm_admin_vars && clm_admin_vars.text && clm_admin_vars.text.upload_audio) || 'Select Audio');
+            var uploaderButtonText = (clm_admin_vars && clm_admin_vars.text && clm_admin_vars.text.upload_button) || 'Use this audio';
+
+
             var trackUploader = wp.media({
-                title: clm_admin_vars.text.upload_audio,
-                button: {
-                    text: clm_admin_vars.text.upload_button
-                },
+                title: uploaderTitle,
+                button: { text: uploaderButtonText },
                 multiple: false,
-                library: {
-                    type: 'audio'
-                }
+                library: { type: 'audio' }
             });
-            
-            // When a file is selected
+
             trackUploader.on('select', function() {
                 var attachment = trackUploader.state().get('selection').first().toJSON();
-                inputField.val(attachment.id);
-                
-                // Update the preview
-                updatePracticeTrackPreview(attachment, previewContainer);
+                $inputField.val(attachment.id);
+                $previewContainer.html(buildAdminMediaPreviewHtml(attachment, true)); // Use helper, true for player
             });
-            
-            // Open the uploader
             trackUploader.open();
         });
     }
     
     /**
-     * Update media preview based on field type and attachment
-     */
-    function updateMediaPreview(fieldType, attachment, previewContainer) {
-        previewContainer.empty();
-        
-        var previewItem, icon, fileExt;
-        
-        switch (fieldType) {
-            case 'sheet_music':
-                fileExt = attachment.filename.split('.').pop().toLowerCase();
-                
-                if (fileExt === 'pdf') {
-                    icon = 'dashicons-pdf';
-                } else if (fileExt === 'doc' || fileExt === 'docx') {
-                    icon = 'dashicons-media-document';
-                } else {
-                    icon = 'dashicons-media-default';
-                }
-                
-                previewItem = $('<div class="clm-media-item">' +
-                    '<span class="dashicons ' + icon + '"></span>' +
-                    '<a href="' + attachment.url + '" target="_blank">' + attachment.filename + '</a>' +
-                    '</div>');
-                break;
-                
-            case 'audio_file':
-                previewItem = $('<div class="clm-media-item">' +
-                    '<span class="dashicons dashicons-format-audio"></span>' +
-                    '<a href="' + attachment.url + '" target="_blank">' + attachment.filename + '</a>' +
-                    '<div class="clm-audio-player">' +
-                    '<audio controls src="' + attachment.url + '"></audio>' +
-                    '</div>' +
-                    '</div>');
-                break;
-                
-            case 'midi_file':
-                previewItem = $('<div class="clm-media-item">' +
-                    '<span class="dashicons dashicons-format-audio"></span>' +
-                    '<a href="' + attachment.url + '" target="_blank">' + attachment.filename + '</a>' +
-                    '</div>');
-                break;
-                
-            default:
-                previewItem = $('<div class="clm-media-item">' +
-                    '<span class="dashicons dashicons-media-default"></span>' +
-                    '<a href="' + attachment.url + '" target="_blank">' + attachment.filename + '</a>' +
-                    '</div>');
+         * Helper function to build HTML for media preview in admin.
+         * @param {object} attachment - The media attachment object from WordPress.
+         * @param {boolean} withPlayer - Whether to include an audio player for audio types.
+         * @returns {string} HTML string for the preview.
+         */
+    function buildAdminMediaPreviewHtml(attachment, withPlayer = false) {
+        if (!attachment || !attachment.url || !attachment.filename) return '';
+
+        var iconClass = 'dashicons-media-default';
+        var type = attachment.type; // 'image', 'audio', 'video'
+        var subtype = attachment.subtype; // 'jpeg', 'mp3', 'pdf', 'msword'
+
+        if (type === 'audio') {
+            iconClass = 'dashicons-format-audio';
+        } else if (type === 'video') {
+            iconClass = 'dashicons-format-video';
+        } else if (type === 'image') {
+            iconClass = 'dashicons-format-image';
+        } else if (subtype === 'pdf') {
+            iconClass = 'dashicons-pdf';
+        } else if (subtype === 'msword' || subtype === 'vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            iconClass = 'dashicons-media-document';
         }
-        
-        previewContainer.append(previewItem);
+
+        var previewHtml = '<div class="clm-media-item">';
+        previewHtml += '<span class="dashicons ' + escapeHtml(iconClass) + '"></span> ';
+        previewHtml += '<a href="' + escapeHtml(attachment.url) + '" target="_blank">' + escapeHtml(attachment.filename) + '</a>';
+        if (withPlayer && type === 'audio' && subtype !== 'midi' && subtype !== 'mid') {
+            previewHtml += '<div class="clm-audio-player" style="margin-top:5px;"><audio controls src="' + escapeHtml(attachment.url) + '"></audio></div>';
+        }
+        previewHtml += '</div>';
+        return previewHtml;
     }
-    
+
+
+
+        
     /**
      * Update practice track preview
      */
@@ -202,58 +179,7 @@
         previewContainer.append(previewItem);
     }
     
-    /**
-     * Album lyrics management
-     */
-    function initAlbumLyrics() {
-        // Make lyrics sortable
-        if ($.fn.sortable) {
-            $('.clm-sortable-lyrics').sortable({
-                placeholder: 'clm-sortable-placeholder',
-                update: function(event, ui) {
-                    // Update the order of lyrics if needed
-                }
-            });
-        }
-        
-        // Add lyric to album
-        $('.clm-add-lyric').on('click', function(e) {
-            e.preventDefault();
-            
-            var dropdown = $('#clm_lyrics_dropdown');
-            var lyricId = dropdown.val();
-            var lyricTitle = dropdown.find('option:selected').text();
-            
-            if (!lyricId) {
-                return;
-            }
-            
-            // Check if lyric already exists in the list
-            if ($('#clm-selected-lyrics li[data-id="' + lyricId + '"]').length) {
-                alert(clm_admin_vars.text.already_added);
-                return;
-            }
-            
-            // Add lyric to the list
-            var lyricItem = $('<li data-id="' + lyricId + '">' +
-                '<input type="hidden" name="clm_lyrics[]" value="' + lyricId + '">' +
-                lyricTitle +
-                '<a href="#" class="clm-remove-lyric dashicons dashicons-no"></a>' +
-                '</li>');
-            
-            $('#clm-selected-lyrics').append(lyricItem);
-            
-            // Reset dropdown
-            dropdown.val('');
-        });
-        
-        // Remove lyric from album (delegated event)
-        $('#clm-selected-lyrics').on('click', '.clm-remove-lyric', function(e) {
-            e.preventDefault();
-            
-            $(this).parent().remove();
-        });
-    }
+    
     
     /**
      * Settings page functionality
@@ -327,17 +253,21 @@
      * Initialize everything when the document is ready
      */
     $(document).ready(function() {
-        // Initialize media uploader
-        initMediaUploader();
-        
-        // Initialize album lyrics management
-        initAlbumLyrics();
-        
-        // Initialize settings page
-        initSettings();
-        
-        // Initialize analytics
-        initAnalytics();
-    });
+        console.log("CLM Admin JS: Document Ready.");
+        if (typeof clm_admin_vars === 'undefined') {
+            console.error("CLM Admin JS: clm_admin_vars not defined. Some features may not work.");
+            // You might not want to halt execution entirely for admin JS
+        }
 
+        initMediaUploader();
+        initSettings();
+
+        // Only initialize analytics if on the analytics page (example condition)
+        if ($('#clm-analytics-dashboard').length) { // Assume your analytics dashboard has this ID
+            initAnalytics();
+             if (typeof loadChart === 'function') loadChart(); // Initial load if on the page
+        }
+
+        // Other admin initializations if needed
+    });
 })(jQuery);

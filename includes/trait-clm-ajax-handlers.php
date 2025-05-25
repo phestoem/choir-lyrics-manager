@@ -94,6 +94,70 @@ trait CLM_Ajax_Handlers {
             $args['tax_query'] = $tax_query;
         }
         
+		// Add meta queries for media type filters
+			$meta_query = array();
+
+			if (!empty($filters['has_audio'])) {
+				$meta_query[] = array(
+					'relation' => 'OR',
+					array(
+						'key' => '_clm_audio_file_id',
+						'value' => '',
+						'compare' => '!='
+					),
+					array(
+						'key' => '_clm_practice_tracks',
+						'compare' => 'EXISTS'
+					)
+				);
+			}
+
+			if (!empty($filters['has_video'])) {
+				$meta_query[] = array(
+					'key' => '_clm_video_embed',
+					'value' => '',
+					'compare' => '!='
+				);
+			}
+
+			if (!empty($filters['has_sheet'])) {
+				$meta_query[] = array(
+					'key' => '_clm_sheet_music_id',
+					'value' => '',
+					'compare' => '!='
+				);
+			}
+
+			if (!empty($filters['has_midi'])) {
+				$meta_query[] = array(
+					'key' => '_clm_midi_file_id',
+					'value' => '',
+					'compare' => '!='
+				);
+			}
+
+			// If any media type filter is active without specific type
+			if (isset($filters['has_media']) && empty($filters['has_audio']) && empty($filters['has_video']) && 
+				empty($filters['has_sheet']) && empty($filters['has_midi'])) {
+				$meta_query[] = array(
+					'relation' => 'OR',
+					array('key' => '_clm_audio_file_id', 'value' => '', 'compare' => '!='),
+					array('key' => '_clm_video_embed', 'value' => '', 'compare' => '!='),
+					array('key' => '_clm_sheet_music_id', 'value' => '', 'compare' => '!='),
+					array('key' => '_clm_midi_file_id', 'value' => '', 'compare' => '!='),
+					array('key' => '_clm_practice_tracks', 'compare' => 'EXISTS')
+				);
+			}
+
+			if (!empty($meta_query)) {
+				if (count($meta_query) > 1) {
+					array_unshift($meta_query, array('relation' => 'AND'));
+				}
+				$args['meta_query'] = $meta_query;
+			}
+					
+		
+		
         // Add alphabet filter
         if (!empty($filters['starts_with']) && $filters['starts_with'] !== 'all') {
             add_filter('posts_where', function($where) use ($filters) {

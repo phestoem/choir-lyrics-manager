@@ -1,45 +1,338 @@
 /**
- * Unified Public CSS for Choir Lyrics Manager
- * Handles logged-in and non-logged-in user states
- * @package Choir_Lyrics_Manager
- * @version 1.1.0
+ * Choir Lyrics Manager - Optimized Public CSS
+ * Professional organization with improved maintainability
+ * 
+ * @package    Choir_Lyrics_Manager
+ * @version    1.2.1
+ * @author     CLM Development Team
  */
 
-/* ==================== 
-   Reset and Container 
-   ==================== */
-.clm-container {
-    max-width: 1200px;
+/* ========================================================================
+   CSS RESET & BASE STYLES
+   ======================================================================== */
+
+.clm-container,
+.clm-single-lyric-page-container {
+    max-width: 1100px;
     margin: 0 auto;
     padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    line-height: 1.6;
+    color: #444;
 }
 
-.clm-container * {
+.clm-container *,
+.clm-single-lyric-page-container * {
     box-sizing: border-box;
 }
 
-/* ==================== 
-   Page Header 
-   ==================== */
+/* Generic headings for sections and widgets */
+.clm-single-lyric-page-container h2,
+.clm-single-lyric-page-container h3,
+.clm-single-lyric-page-container h4 {
+    color: #333;
+    margin-top: 0;
+}
+
+/* ========================================================================
+   TYPOGRAPHY & HEADINGS
+   ======================================================================== */
+
+.clm-archive-title {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.clm-lyric-title {
+    font-size: 2.2em;
+    margin: 0 0 10px;
+    line-height: 1.3;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.clm-section-title,
+.clm-section-subtitle {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+.clm-subheading {
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+/* ========================================================================
+   LAYOUT CONTAINERS
+   ======================================================================== */
+
+/* Archive page header */
 .clm-archive-header {
     margin-bottom: 30px;
     text-align: center;
 }
 
-.clm-archive-title {
-    font-size: 2.5em;
+.clm-archive-description {
+    color: #666;
+    font-size: 1.1rem;
+    margin-top: 10px;
+}
+
+/* Single lyric page structure */
+.clm-lyric-article {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     margin-bottom: 30px;
+}
+
+.clm-lyric-header {
+    padding: 25px 30px;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.clm-lyric-main-content {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px 30px 30px;
+    gap: 30px;
+}
+
+.clm-lyric-text-content {
+    flex: 2;
+    min-width: 300px;
+}
+
+.clm-lyric-content {
+    font-size: 1.1em;
+    line-height: 1.8;
+    white-space: pre-line;
+    color: #34495e;
+}
+
+.clm-lyric-content p {
+    margin-bottom: 1.2em;
+}
+
+/* Sidebar layout */
+.clm-lyric-sidebar {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.clm-lyric-sidebar > div {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.clm-lyric-sidebar h2 {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
     color: #333;
 }
 
-/* ==================== 
-   Search Section 
-   ==================== */
+.clm-lyric-footer {
+    padding: 20px 30px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #f0f0f0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* ========================================================================
+   BUTTONS & FORM ELEMENTS
+   ======================================================================== */
+
+.clm-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #007cba;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.clm-button:hover {
+    background: #005a87;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 124, 186, 0.3);
+}
+
+.clm-button-primary {
+    background: #28a745;
+}
+
+.clm-button-primary:hover {
+    background: #218838;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.clm-button-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.clm-button-secondary:hover {
+    background-color: #e9e9e9;
+    color: #333;
+}
+
+.clm-button-small {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.clm-button-text {
+    background: transparent;
+    color: #007cba;
+    border: 1px solid transparent;
+    text-decoration: underline;
+}
+
+.clm-button-text:hover {
+    background: #f0f7ff;
+    text-decoration: none;
+}
+
+/* Toggle buttons */
+.clm-toggle-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #f0f2f5;
+    border: 1px solid #dcdcde;
+    color: #50575e;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    margin-top: 10px;
+    min-height: 44px; /* Ensure touch-friendly size */
+    min-width: 44px;
+    touch-action: manipulation; /* Improves touch responsiveness */
+    -webkit-tap-highlight-color: rgba(0, 124, 186, 0.3); /* Chrome-specific touch feedback */
+    -webkit-touch-callout: none; /* Disable Chrome context menu on long press */
+    -webkit-user-select: none; /* Prevent text selection in Chrome */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: relative;
+    z-index: 1; /* Ensure it's above other elements */
+    /* Chrome-specific fixes */
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+}
+
+.clm-toggle-button:hover,
+.clm-toggle-button:focus,
+.clm-toggle-button:active {
+    background-color: #e5e7eb;
+    border-color: #c8cacc;
+    outline: none;
+    /* Chrome-specific active state */
+    -webkit-tap-highlight-color: rgba(0, 124, 186, 0.4);
+}
+
+/* Chrome-specific touch states */
+.clm-toggle-button:active,
+.clm-toggle-button.clm-button-touching {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+    background-color: #d1d5db;
+    border-color: #9ca3af;
+}
+
+.clm-toggle-button .clm-toggle-icon {
+    transition: transform 0.3s ease-in-out;
+    flex-shrink: 0;
+    pointer-events: none; /* Prevent Chrome from targeting the icon instead of button */
+}
+
+.clm-toggle-button[aria-expanded="true"] .clm-toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Chrome-specific text elements inside button */
+.clm-toggle-button span {
+    pointer-events: none; /* Ensure Chrome doesn't target spans inside button */
+}
+
+/* Form inputs */
+.clm-form-field {
+    margin-bottom: 15px;
+}
+
+.clm-form-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.clm-form-field input[type="text"],
+.clm-form-field input[type="number"],
+.clm-form-field input[type="date"],
+.clm-form-field select,
+.clm-form-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.clm-form-field input:focus,
+.clm-form-field select:focus,
+.clm-form-field textarea:focus {
+    border-color: #007cba;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+}
+
+/* ========================================================================
+   SEARCH & FILTERING
+   ======================================================================== */
+
 .clm-search-section {
     background: #f8f9fa;
     padding: 30px 20px;
     margin-bottom: 30px;
     border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .clm-search-wrapper {
@@ -59,8 +352,9 @@
     padding: 12px 50px 12px 20px;
     font-size: 16px;
     border: 2px solid #ddd;
-    border-radius: 50px;
+    border-radius: 25px;
     transition: all 0.3s ease;
+    background: white;
 }
 
 .clm-search-input:focus {
@@ -93,7 +387,7 @@
 
 .clm-search-loading {
     position: absolute;
-    right: 15px;
+    right: 50px;
     top: 50%;
     transform: translateY(-50%);
 }
@@ -105,15 +399,15 @@
     right: 0;
     background: white;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 100;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
     margin-top: 5px;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
-/* ==================== 
-   Quick Filters 
-   ==================== */
+/* Quick filters */
 .clm-quick-filters {
     text-align: center;
     margin-top: 20px;
@@ -122,20 +416,22 @@
 .clm-quick-filter {
     display: inline-block;
     padding: 8px 16px;
-    margin: 5px;
+    margin: 4px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 25px;
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
     text-decoration: none;
     color: #333;
+    font-weight: 500;
 }
 
 .clm-quick-filter:hover {
     border-color: #007cba;
     color: #007cba;
+    transform: translateY(-1px);
 }
 
 .clm-quick-filter.active {
@@ -144,75 +440,53 @@
     border-color: #007cba;
 }
 
-/* ==================== 
-   Results Controls 
-   ==================== */
-.clm-results-controls,
-.clm-results-info-controls {
+/* Media quick filters */
+.clm-media-quick-filters {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
     flex-wrap: wrap;
-    gap: 15px;
+    align-items: center;
+    margin-top: 15px;
+    gap: 10px;
 }
 
-.clm-results-info {
-    font-size: 16px;
-    color: #666;
-}
-
-.clm-results-count {
+.clm-filter-label {
     font-weight: 600;
-    color: #333;
-}
-
-.clm-view-options {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.clm-items-per-page {
-    padding: 8px 12px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    background: white;
+    color: #555;
     font-size: 14px;
 }
 
-.clm-toggle-filters {
-    display: flex;
+.clm-media-quick-filter {
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 8px 16px;
+    gap: 6px;
+    padding: 8px 14px;
     background: white;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    text-decoration: none;
     color: #333;
+    transition: all 0.2s ease;
+    font-size: 14px;
 }
 
-.clm-toggle-filters:hover {
+.clm-media-quick-filter:hover {
     border-color: #007cba;
+    color: #007cba;
 }
 
-.clm-toggle-filters.active {
+.clm-media-quick-filter.active {
     background: #007cba;
     color: white;
     border-color: #007cba;
 }
 
-/* ==================== 
-   Advanced Filters 
-   ==================== */
+/* Advanced filters */
 .clm-advanced-filters {
     background: #f8f9fa;
-    padding: 30px;
+    padding: 25px;
     border-radius: 8px;
     margin-bottom: 30px;
+    border: 1px solid #e9ecef;
 }
 
 .clm-filters-grid {
@@ -227,48 +501,171 @@
     margin-bottom: 8px;
     font-weight: 600;
     color: #333;
+    font-size: 14px;
 }
 
 .clm-filter-select {
     width: 100%;
-    padding: 10px;
+    padding: 10px 12px;
     border: 2px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     background: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.clm-filter-select:focus {
+    border-color: #007cba;
+    outline: none;
+}
+
+/* Checkbox groups */
+.clm-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.clm-checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #ddd;
+    transition: all 0.2s;
+    font-weight: normal;
     font-size: 14px;
 }
 
-/* ==================== 
-   Alphabet Navigation 
-   ==================== */
+.clm-checkbox-group label:hover {
+    background: #f0f7ff;
+    border-color: #007cba;
+}
+
+.clm-checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.clm-checkbox-group .dashicons {
+    margin-right: 6px;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Filter actions */
+.clm-filter-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+/* Results controls */
+.clm-results-info-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.clm-results-info {
+    font-size: 16px;
+    color: #666;
+}
+
+.clm-results-count {
+    font-weight: 600;
+    color: #007cba;
+    font-size: 1.1em;
+}
+
+.clm-view-options {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.clm-items-per-page {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.clm-toggle-filters {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+}
+
+.clm-toggle-filters:hover {
+    border-color: #007cba;
+    color: #007cba;
+}
+
+.clm-toggle-filters.active {
+    background: #007cba;
+    color: white;
+    border-color: #007cba;
+}
+
+/* ========================================================================
+   NAVIGATION ELEMENTS
+   ======================================================================== */
+
+/* Alphabet navigation */
 .clm-alphabet-nav {
     text-align: center;
     margin-bottom: 30px;
     background: #f8f9fa;
-    padding: 15px;
+    padding: 20px;
     border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .clm-alpha-link {
     display: inline-block;
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
     text-align: center;
-    margin: 2px;
+    margin: 3px;
     background: white;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     text-decoration: none;
     color: #333;
     font-weight: 600;
     transition: all 0.2s ease;
+    font-size: 14px;
 }
 
 .clm-alpha-link:hover {
-    background: #f0f0f0;
+    background: #f0f7ff;
     border-color: #007cba;
     color: #007cba;
+    transform: translateY(-1px);
 }
 
 .clm-alpha-link.active {
@@ -277,220 +674,53 @@
     border-color: #007cba;
 }
 
-/* ==================== 
-   Items List 
-   ==================== */
-.clm-items-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.clm-lyric-item,
-.clm-item {
+/* Media navigation */
+.clm-media-navigation {
     margin-bottom: 30px;
+    background: #f8f9fa;
     padding: 20px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
 }
 
-.clm-lyric-item:hover,
-.clm-item:hover {
+.clm-media-nav-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.clm-media-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.clm-media-nav-item:hover {
     border-color: #007cba;
+    color: #007cba;
+    transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.clm-item-card {
-    height: 100%;
+.clm-media-nav-item.active {
+    border-color: #007cba;
+    box-shadow: 0 4px 12px rgba(0, 124, 186, 0.3);
 }
 
-.clm-item-title {
-    margin: 0 0 15px;
-    font-size: 1.5em;
-}
+/* ========================================================================
+   PAGINATION STYLES
+   ======================================================================== */
 
-.clm-item-title a {
-    color: #007cba;
-    text-decoration: none;
-}
-
-.clm-item-title a:hover {
-    text-decoration: underline;
-}
-
-.clm-item-meta {
-    margin-bottom: 15px;
-    font-size: 14px;
-    color: #666;
-}
-
-.clm-meta-separator {
-    margin: 0 8px;
-}
-
-.clm-item-excerpt {
-    margin-bottom: 20px;
-    line-height: 1.6;
-    color: #555;
-}
-
-/* ==================== 
-   Item Actions 
-   ==================== */
-.clm-item-actions {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    flex-wrap: wrap;
-}
-
-/* Hide playlist button for non-logged-in users */
-body:not(.logged-in) .clm-create-playlist-button,
-body:not(.logged-in) .clm-create-playlist-form {
-    display: none !important;
-}
-
-/* Adjust layout for logged-out users */
-body:not(.logged-in) .clm-item-actions {
-    justify-content: flex-start;
-    display: block;
-}
-
-body:not(.logged-in) .clm-skill-status-widget,
-body:not(.logged-in) .clm-practice-tracker {
-    display: none;
-}
-
-/* ==================== 
-   Buttons .
-   ==================== */
-.clm-button {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #007cba;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease;
-    font-size: 14px;
-    line-height: normal;
-}
-
-.clm-button:hover {
-    background: #005a87;
-    color: white;
-}
-
-.clm-button-text {
-    background: transparent;
-    color: #007cba;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-.clm-button-small {
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
-.clm-button-primary {
-    background: #28a745;
-}
-
-.clm-button-primary:hover {
-    background: #218838;
-}
-
-/* Create Playlist Button */
-.clm-create-playlist-button {
-    background: #28a745;
-}
-
-.clm-create-playlist-button:hover {
-    background: #218838;
-}
-
-/* ==================== 
-   Create Playlist Form 
-   ==================== */
-.clm-create-playlist-form {
-    display: none;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 15px;
-    margin-top: 10px;
-    width: 100%;
-    clear: both;
-}
-
-.clm-create-playlist-form h4 {
-    margin: 0 0 15px;
-    font-size: 1.1em;
-}
-
-.clm-form-field {
-    margin-bottom: 15px;
-}
-
-.clm-form-field label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.clm-form-field input[type="text"],
-.clm-form-field textarea {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 14px;
-}
-
-.clm-form-field textarea {
-    resize: vertical;
-}
-
-.clm-radio-group {
-    margin-top: 5px;
-}
-
-.clm-radio-group label {
-    display: inline-block;
-    margin-right: 15px;
-    font-weight: normal;
-    cursor: pointer;
-}
-
-.clm-radio-group input[type="radio"] {
-    margin-right: 5px;
-}
-
-.clm-form-actions {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-}
-
-/**
- * Updated Pagination Styles for Choir Lyrics Manager
- * 
- * This replaces the three pagination sections at the end of your public.css file.
- * Replace everything from /* ==================== Unified Pagination Styles ==================== */ 
- * to the end of the file with this cleaner, consolidated version.
- */
-
-/* ==================== 
-   Unified Pagination Styles 
-   ==================== */
 .clm-pagination,
 .clm-shortcode-pagination {
     width: 100%;
@@ -502,143 +732,115 @@ body:not(.logged-in) .clm-practice-tracker {
     clear: both;
 }
 
-/* Pagination Wrapper */
 .clm-pagination-wrapper,
-.page-numbers,
-.nav-links {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    margin: 0 0 15px 0 !important;
-    list-style: none !important;
-    padding: 0 !important;
+ul.page-numbers,
+.page-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0 0 20px 0;
+    list-style: none;
+    padding: 0;
 }
 
-/* Individual Page Links - Core styling with !important to overcome theme conflicts */
-.clm-page-link, 
-.page-numbers,
-.clm-pagination-wrapper a,
-.clm-pagination-wrapper span,
-.clm-pagination .page-numbers a,
-.clm-pagination .page-numbers span,
-.clm-shortcode-pagination .page-numbers a,
-.clm-shortcode-pagination .page-numbers span,
+/* Reset all pagination elements */
+.clm-pagination a,
+.clm-pagination span,
 .clm-shortcode-pagination a,
-.clm-shortcode-pagination span {
-    color: #333 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    padding: 5px 10px !important;
-    border: 1px solid #ddd !important;
-    border-radius: 4px !important;
-    background: white !important;
-    font-size: 14px !important;
-    line-height: 1.5 !important;
-    text-decoration: none !important;
-    transition: all 0.3s ease !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    margin: 0 !important;
+.clm-shortcode-pagination span,
+ul.page-numbers a,
+ul.page-numbers span,
+.page-numbers a,
+.page-numbers span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin: 0;
+    cursor: pointer;
+    pointer-events: auto;
 }
 
-/* Current Page Styling */
-.clm-page-link.clm-current,
+/* Current page styling */
 span.page-numbers.current,
-.current,
-.clm-pagination .current,
-.clm-pagination .clm-current,
-.clm-shortcode-pagination .current,
-.clm-shortcode-pagination .clm-current,
-.page-numbers .current,
-.page-numbers .clm-current,
-span.page-numbers.current,
-span.clm-page-link.clm-current {
-    background-color: #007cba !important;
-    color: white !important;
-    border-color: #007cba !important;
-    font-weight: 500 !important;
-    pointer-events: none !important;
+span.clm-current,
+.clm-pagination span.current,
+.clm-shortcode-pagination span.current {
+    background-color: #007cba;
+    color: white;
+    border-color: #007cba;
+    pointer-events: none;
+    cursor: default;
 }
 
-/* Hover State */
-.clm-page-link:hover:not(.clm-current, .disabled, .clm-dots),
-.page-numbers:hover:not(.current, .disabled, .dots),
-.page-numbers a:hover,
-.clm-pagination-wrapper a:hover {
-    border-color: #007cba !important;
-    background: #f8f9fa !important;
-    color: #007cba !important;
+/* Hover effects */
+.clm-pagination a:hover,
+.clm-shortcode-pagination a:hover,
+ul.page-numbers a:hover,
+.page-numbers a:hover {
+    border-color: #007cba;
+    background: #f0f7ff;
+    color: #007cba;
 }
 
-/* Dots Separator */
-.clm-page-link.clm-dots,
-.page-numbers.dots,
-.dots {
-    border: none !important;
-    background: transparent !important;
-    cursor: default !important;
+/* Previous/Next buttons */
+.prev,
+.next,
+.clm-prev,
+.clm-next {
+    padding: 8px 16px;
+    gap: 6px;
 }
 
-/* Previous/Next Buttons */
-.clm-page-link.clm-prev,
-.clm-page-link.clm-next,
-.page-numbers.prev,
-.page-numbers.next,
-.prev, 
-.next {
-    padding: 5px 15px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-}
-
-/* Disabled State */
-.clm-page-link.disabled,
-.page-numbers.disabled,
+/* Disabled state */
 .disabled {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
-/* Dashicons in pagination */
-.clm-page-link .dashicons,
-.page-numbers .dashicons {
-    font-size: 16px !important;
-    width: 16px !important;
-    height: 16px !important;
-    vertical-align: middle !important;
-    line-height: 1 !important;
-    display: inline-block !important;
+/* Dots */
+.dots,
+.clm-dots {
+    border: none;
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
 }
 
-/* Page Jump Form */
+/* Page jump form */
 .clm-page-jump {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 15px;
     justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
 }
 
 .clm-page-jump label {
     font-size: 14px;
-    color: #555;
-    margin-right: 5px;
+    color: #666;
 }
 
 .clm-page-jump-input,
 #clm-page-jump-input {
-    width: 60px;
-    padding: 8px 10px;
+    width: 70px;
+    height: 36px;
+    padding: 8px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
     text-align: center;
 }
@@ -646,546 +848,1806 @@ span.clm-page-link.clm-current {
 .clm-page-jump-input:focus,
 #clm-page-jump-input:focus {
     border-color: #007cba;
-    box-shadow: 0 0 0 1px #007cba;
-    outline: 2px solid transparent;
-}
-
-.clm-page-jump-button,
-.clm-page-jump button,
-#clm-page-jump-button,
-.clm-go-button {
-    padding: 8px 16px;
-    background: #007cba !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 4px !important;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s ease;
-}
-
-.clm-page-jump-button:hover,
-.clm-page-jump button:hover,
-#clm-page-jump-button:hover,
-.clm-go-button:hover {
-    background: #005a87 !important;
-}
-
-/* Force page 1 styling on page 1 (specific case) */
-body:not([class*="paged-"]) .page-numbers a:first-of-type,
-body.paged-1 .page-numbers a:first-of-type,
-body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
-body.paged-1 .clm-pagination-wrapper a:first-of-type {
-    background-color: #007cba !important;
-    color: white !important;
-    border-color: #007cba !important;
-    font-weight: 500 !important;
-    pointer-events: none !important;
-}
-
-/* Responsive pagination adjustments */
-@media (max-width: 768px) {
-    .clm-page-link, 
-    .page-numbers,
-    .clm-pagination-wrapper a,
-    .clm-pagination-wrapper span {
-        min-width: 36px !important;
-        height: 36px !important;
-        padding: 6px 10px !important;
-        font-size: 13px !important;
-    }
-    
-    .clm-page-link.clm-prev, 
-    .clm-page-link.clm-next,
-    .page-numbers.prev,
-    .page-numbers.next {
-        padding: 6px 12px !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .clm-pagination-wrapper,
-    .page-numbers {
-        gap: 3px !important;
-    }
-    
-    .clm-page-link, 
-    .page-numbers,
-    .clm-pagination-wrapper a,
-    .clm-pagination-wrapper span {
-        min-width: 32px !important;
-        height: 32px !important;
-        padding: 5px 8px !important;
-        font-size: 12px !important;
-    }
-    
-    .clm-page-link .dashicons,
-    .page-numbers .dashicons {
-        font-size: 14px !important;
-        width: 14px !important;
-        height: 14px !important;
-    }
-    
-    .clm-go-button {
-        padding: 6px 12px !important;
-        font-size: 12px !important;
-    }
-}
-
-border-radius: 4px !important;
-    font-size: 14px !important;
-    text-align: center !important;
-}
-
-.clm-page-jump-input:focus,
-#clm-page-jump-input:focus {
-    border-color: #007cba !important;
-    outline: none !important;
-    box-shadow: 0 0 0 1px rgba(0, 124, 186, 0.3) !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
 }
 
 .clm-go-button,
-#clm-page-jump-button,
-.clm-page-jump button {
-    height: 36px !important;
-    padding: 0 16px !important;
-    background-color: #007cba !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 4px !important;
-    font-size: 14px !important;
-    cursor: pointer !important;
-    transition: background-color 0.2s ease !important;
+#clm-page-jump-button {
+    height: 36px;
+    padding: 0 16px;
+    background-color: #007cba;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .clm-go-button:hover,
-#clm-page-jump-button:hover,
-.clm-page-jump button:hover {
-    background-color: #005a87 !important;
+#clm-page-jump-button:hover {
+    background-color: #005a87;
 }
 
-/* Critical: Make links clickable */
-.clm-pagination a,
-.clm-shortcode-pagination a,
-.page-numbers a,
-a.page-numbers {
-    pointer-events: auto !important;
-    cursor: pointer !important;
+/* ========================================================================
+   ARCHIVE & LIST VIEWS
+   ======================================================================== */
+
+.clm-items-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-/* Ensure empty items display properly */
-.clm-page-link:empty::before,
-.page-numbers:empty::before {
-    content: attr(data-page, "•") !important;
+.clm-lyric-item,
+.clm-item {
+    margin-bottom: 25px;
+    padding: 25px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
 }
 
-.current:empty::before,
-.clm-current:empty::before,
-span.page-numbers.current:empty::before {
-    content: attr(data-page, "1") !important;
+.clm-lyric-item:hover,
+.clm-item:hover {
+    border-color: #007cba;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
 }
 
-/* Fix aria attributes */
-.clm-pagination .clm-current,
-.clm-shortcode-pagination .clm-current,
-.page-numbers .current {
-    aria-current: "page" !important;
+.clm-item-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Responsive styling */
-@media (max-width: 768px) {
-    .clm-page-link,
-    .page-numbers a,
-    .page-numbers span:not(.dashicons):not(.clm-nav-text):not(.dots) {
-        min-width: 36px !important;
-        height: 36px !important;
-        padding: 5px 8px !important;
-        font-size: 13px !important;
-    }
-    
-    .clm-prev,
-    .clm-next,
-    .prev,
-    .next {
-        padding: 5px 10px !important;
-    }
-    
-    .clm-page-jump-input,
-    #clm-page-jump-input {
-        width: 50px !important;
-    }
+.clm-item-title {
+    margin: 0 0 15px;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-
-@media (max-width: 480px) {
-    .clm-pagination-wrapper,
-    ul.page-numbers {
-        gap: 4px !important;
-    }
-    
-    .clm-page-link,
-    .page-numbers a,
-    .page-numbers span:not(.dashicons):not(.clm-nav-text):not(.dots) {
-        min-width: 32px !important;
-        height: 32px !important;
-        padding: 4px 7px !important;
-        font-size: 12px !important;
-    }
+.clm-item-title a {
+    color: #007cba;
+    text-decoration: none;
+    font-weight: 600;
 }
 
-
-
-/**
- * CSS Fixes for Choir Lyrics Manager Pagination
- * 
- * This CSS should be added to your public.css file to fix pagination styling issues.
- * It removes problematic rules that cause multiple highlighted buttons and unclickable links.
- * 
- * IMPORTANT: Add this to your public.css file at the *VERY END* to ensure it overrides 
- * existing pagination styles.
- */
-
-/* Fix for pagination links - ensure they're clickable */
-.clm-pagination a,
-.clm-shortcode-pagination a,
-.page-numbers a,
-a.page-numbers {
-    pointer-events: auto !important;
-    cursor: pointer !important;
+.clm-item-title a:hover {
+    text-decoration: underline;
 }
 
-/* Remove problematic rule that causes multiple "current" buttons */
-body:not([class*="paged-"]) .page-numbers a:first-of-type,
-body.paged-1 .page-numbers a:first-of-type,
-body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
-body.paged-1 .clm-pagination-wrapper a:first-of-type {
-    background-color: white !important; 
-    color: #333 !important;
-    border-color: #ddd !important;
-    font-weight: normal !important;
-    pointer-events: auto !important;
+.clm-item-meta {
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
 }
 
-/* Reset all pagination elements first */
-.clm-pagination a,
-.clm-pagination span,
-.clm-shortcode-pagination a,
-.clm-shortcode-pagination span,
-.page-numbers a,
-.page-numbers span,
-ul.page-numbers a,
-ul.page-numbers span {
-    background-color: white !important;
-    color: #333 !important;
-    border-color: #ddd !important;
-    font-weight: normal !important;
-    pointer-events: auto !important;
+.clm-meta-separator {
+    margin: 0 8px;
+    color: #ccc;
 }
 
-/* Then apply current styling only to specific elements */
-.clm-page-link.clm-current,
-span.page-numbers.current,
-.clm-pagination span.current,
-.clm-shortcode-pagination span.current,
-ul.page-numbers span.current {
-    background-color: #007cba !important;
-    color: white !important;
-    border-color: #007cba !important;
-    font-weight: 600 !important;
-    pointer-events: none !important;
+.clm-item-excerpt {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    color: #555;
+    flex-grow: 1;
 }
 
-/* Fix for dots styling */
-.clm-page-link.clm-dots,
-span.page-numbers.dots,
-.dots {
-    border: none !important;
-    background: transparent !important;
-    cursor: default !important;
-    pointer-events: none !important;
+.clm-item-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
 }
 
-/* Fix for "go" button */
-.clm-go-button,
-#clm-page-jump-button,
-.clm-page-jump button {
-    background-color: #007cba !important;
-    color: white !important;
-    border: none !important;
-    cursor: pointer !important;
-    pointer-events: auto !important;
+/* Lyrics list specific styles */
+.clm-lyrics-list-container {
+    margin: 20px 0;
 }
 
-/* Attachment Icons Styles */
+.clm-lyrics-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.clm-lyric-card {
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.clm-lyric-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.clm-lyric-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.clm-meta-item {
+    display: inline-block;
+}
+
+.clm-meta-label {
+    font-weight: 600;
+    color: #666;
+}
+
+.clm-meta-value {
+    color: #333;
+}
+
+.clm-meta-value a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.clm-meta-value a:hover {
+    text-decoration: underline;
+}
+
+/* ========================================================================
+   SINGLE LYRIC PAGE COMPONENTS
+   ======================================================================== */
+
+/* Header meta summary */
+.clm-lyric-header-meta-summary {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.clm-header-meta-item .dashicons {
+    margin-right: 5px;
+    vertical-align: text-bottom;
+}
+
+/* Detailed meta section */
+.clm-detailed-meta {
+    background-color: #f8f9fa;
+    padding: 20px 30px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.clm-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 20px;
+}
+
+.clm-meta-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+}
+
+.clm-meta-icon {
+    margin-right: 12px;
+    color: #007cba;
+    font-size: 1.3em;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.clm-meta-icon .dashicons {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+.clm-meta-content {
+    flex: 1;
+}
+
+.clm-meta-label {
+    display: block;
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.clm-meta-value {
+    font-weight: 500;
+    color: #343a40;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.clm-difficulty-stars .dashicons {
+    color: #f39c12;
+    font-size: 16px;
+    margin-right: 1px;
+}
+
+/* Performance notes */
+.clm-performance-notes {
+    background-color: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-top: 30px;
+    border-left: 4px solid #3498db;
+}
+
+/* ========================================================================
+   SIDEBAR WIDGETS
+   ======================================================================== */
+
+/* Practice tracker widget */
+.clm-practice-tracker {
+    /* Styled by generic sidebar rules */
+}
+
+.clm-practice-stats-display {
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.clm-practice-stats-display h4 {
+    font-size: 1em;
+    color: #555;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.clm-practice-stats-display p {
+    margin: 5px 0;
+    color: #666;
+}
+
+.clm-practice-stats-display .clm-stat-value {
+    font-weight: 500;
+    color: #333;
+}
+
+.clm-practice-stats-display .confidence-stars .dashicons {
+    color: #f39c12;
+}
+
+#clm-practice-form-fields h4 {
+    font-size: 1em;
+    color: #555;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+#clm-practice-form-fields p {
+    margin-bottom: 15px;
+}
+
+#clm-practice-form-fields label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    font-size: 0.9em;
+    color: #444;
+}
+
+#clm-practice-form-fields input[type="number"],
+#clm-practice-form-fields select,
+#clm-practice-form-fields textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+
+#clm-practice-form-fields textarea {
+    min-height: 70px;
+}
+
+#clm-submit-practice-log.clm-button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+}
+
+#clm-practice-log-message.clm-ajax-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+#clm-practice-log-message .clm-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+#clm-practice-log-message .clm-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Practice history table */
+.clm-practice-history {
+    margin-top: 25px;
+}
+
+.clm-practice-history h4 {
+    font-size: 1em;
+    color: #555;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.clm-practice-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.clm-practice-history-table th,
+.clm-practice-history-table td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.clm-practice-history-table th {
+    background-color: #f0f2f5;
+    font-weight: 600;
+    color: #444;
+}
+
+.clm-practice-history-table td .dashicons {
+    color: #f39c12;
+    font-size: 14px;
+}
+
+/* Skill status widget */
+.clm-current-skill-display {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.clm-skill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.clm-skill-goal-date-container {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.clm-skill-goal-date-display {
+    font-weight: 500;
+}
+
+.clm-skill-details-for-widget {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.clm-set-skill-goal-button {
+    margin-bottom: 10px;
+}
+
+.clm-set-goal-form {
+    font-size: 0.9em;
+}
+
+.clm-set-goal-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.clm-set-goal-form input[type="date"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.clm-set-goal-message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.clm-set-goal-message.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.clm-set-goal-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.clm-skill-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.clm-skill-stat {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.clm-skill-stat strong {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.clm-skill-progress {
+    margin-top: 20px;
+}
+
+.clm-progress-bar {
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.clm-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+
+/* ========================================================================
+   IMPROVED PLAYLIST WIDGET STYLES
+   ======================================================================== */
+
+.clm-playlist-wrapper {
+    position: relative;
+}
+
+.clm-playlist-button {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.clm-playlist-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 1000;
+    padding: 15px;
+    margin-top: -1px;
+    /* Set minimum width for better usability */
+    min-width: 280px;
+    max-width: 90vw; /* Prevent going off-screen */
+    white-space: nowrap; /* Prevent text wrapping in narrow containers */
+}
+
+/* Adjust positioning if dropdown would go off-screen on the right */
+.clm-playlist-dropdown.clm-align-right {
+    left: auto;
+    right: 0;
+    transform: none;
+}
+
+/* Adjust positioning if dropdown would go off-screen on the left */
+.clm-playlist-dropdown.clm-align-left {
+    left: 0;
+    transform: none;
+}
+
+.clm-playlist-dropdown h4 {
+    font-size: 0.95em;
+    margin: 0 0 10px;
+    color: #444;
+    font-weight: 600;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    white-space: normal; /* Allow wrapping for headings */
+}
+
+.clm-playlist-dropdown ul {
+    list-style: none;
+    margin: 0 0 15px;
+    padding: 0;
+    max-height: 120px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    min-width: 100%; /* Ensure full width usage */
+}
+
+.clm-playlist-dropdown li a.clm-add-to-playlist {
+    display: block;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: #007cba;
+    font-size: 0.9em;
+    border-bottom: 1px solid #f5f5f5;
+    white-space: normal; /* Allow text wrapping for long playlist names */
+    word-wrap: break-word;
+}
+
+.clm-playlist-dropdown li:last-child a.clm-add-to-playlist {
+    border-bottom: none;
+}
+
+.clm-playlist-dropdown li a.clm-add-to-playlist:hover {
+    background-color: #f0f7ff;
+}
+
+.clm-create-new-playlist .clm-new-playlist-name {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+    min-width: 200px; /* Ensure input has reasonable width */
+}
+
+.clm-create-new-playlist .clm-create-and-add.clm-button {
+    width: 100%;
+    font-size: 0.9em;
+}
+
+/* Playlist feedback states */
+.clm-add-to-playlist.clm-processing,
+.clm-create-and-add:disabled {
+    cursor: wait;
+}
+
+.clm-add-to-playlist.clm-success-feedback {
+    color: #28a745 !important;
+    font-weight: bold;
+}
+
+.clm-add-to-playlist.clm-notice-feedback {
+    color: #ffc107 !important;
+}
+
+.clm-add-to-playlist.clm-error-feedback {
+    color: #dc3545 !important;
+}
+
+/* ========================================================================
+   MEDIA DISPLAY
+   ======================================================================== */
+
+.clm-media-display-section {
+    padding: 30px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.clm-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.clm-media-item {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.clm-media-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.clm-media-item-title {
+    background-color: #f1f1f1;
+    margin: 0;
+    padding: 15px;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.clm-media-item-title .dashicons {
+    margin-right: 10px;
+    color: #3498db;
+}
+
+.clm-media-content {
+    padding: 20px;
+}
+
+/* Video container */
+.clm-video-embed-container,
+.clm-video-wrapper,
+.clm-video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    background: #000;
+    border-radius: 6px;
+    margin: 0;
+}
+
+.clm-video-embed-container iframe,
+.clm-video-wrapper iframe,
+.clm-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    max-width: none; /* Override any theme max-width restrictions */
+}
+
+/* File links */
+.clm-file-link {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.clm-file-link:hover {
+    background-color: #f5f5f5;
+    color: #3498db;
+    border-color: #3498db;
+}
+
+.clm-file-link .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    color: #3498db;
+}
+
+.clm-file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clm-download-text {
+    margin-left: 10px;
+    font-size: 0.9em;
+    background-color: #3498db;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+/* Practice tracks */
+.clm-practice-tracks-section {
+    margin-top: 40px;
+}
+
+.clm-practice-tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.clm-practice-track-card {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.clm-practice-track-title {
+    background-color: #f1f1f1;
+    margin: 0;
+    padding: 15px;
+    font-size: 1em;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.clm-practice-track-player {
+    padding: 20px;
+}
+
+/* Media browser grid */
+.clm-media-browser .clm-items-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+/* Media browser cards */
+.clm-media-card {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.clm-media-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.clm-media-thumbnail {
+    position: relative;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: #f5f5f5;
+}
+
+.clm-media-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.clm-media-card:hover .clm-media-overlay {
+    opacity: 1;
+}
+
+.clm-media-badges {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+}
+
+.clm-media-badge {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.clm-quick-play {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+}
+
+.clm-play-button {
+    background: rgba(0, 124, 186, 0.9);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.clm-play-button:hover {
+    background: rgba(0, 124, 186, 1);
+}
+
+/* ========================================================================
+   ATTACHMENT ICONS
+   ======================================================================== */
+
 .clm-attachment-icons {
     display: inline-flex;
-    margin-left: 10px;
     align-items: center;
-    vertical-align: middle;
+    gap: 6px;
+    margin-left: 10px;
 }
 
 .clm-attachment-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    margin-right: 5px;
-    background-color: #f8f9fa;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    position: relative;
+    font-size: 16px;
     transition: all 0.2s ease;
+    cursor: help;
 }
 
 .clm-attachment-icon:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.clm-attachment-icon .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-}
+/* ========================================================================
+   NOTIFICATIONS & LOADING STATES
+   ======================================================================== */
 
-.clm-audio-icon {
-    color: #3498db;
-}
-
-.clm-video-icon {
-    color: #e74c3c;
-}
-
-.clm-sheet-icon {
-    color: #27ae60;
-}
-
-.clm-midi-icon {
-    color: #9b59b6;
-}
-
-/* Make sure the title works with the icons */
-.clm-item-title {
+.clm-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    justify-content: center;
+    z-index: 9999;
 }
 
-/* Responsive adjustments */
+.clm-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.clm-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.clm-notice {
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+/* Notification system */
+.clm-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    z-index: 10000;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.clm-notification-info {
+    background-color: #17a2b8;
+}
+
+.clm-notification-success {
+    background-color: #28a745;
+}
+
+.clm-notification-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.clm-notification-error {
+    background-color: #dc3545;
+}
+
+/* ========================================================================
+   UTILITY CLASSES
+   ======================================================================== */
+
+/* Hide features for non-logged-in users */
+body:not(.logged-in) .clm-create-playlist-button,
+body:not(.logged-in) .clm-create-playlist-form,
+body:not(.logged-in) .clm-skill-status-widget,
+body:not(.logged-in) .clm-practice-tracker {
+    display: none !important;
+}
+
+/* Screen reader text */
+.screen-reader-text {
+    position: absolute !important;
+    clip: rect(1px, 1px, 1px, 1px);
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden;
+}
+
+/* Spinning animation */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN
+   ======================================================================== */
+
+@media (max-width: 768px) {
+    .clm-container,
+    .clm-single-lyric-page-container {
+        padding: 15px;
+    }
+    
+    .clm-archive-title {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .clm-lyric-title {
+        font-size: 1.8em;
+        padding-right: 0; /* Remove padding on mobile to avoid overlap */
+        line-height: 1.2;
+    }
+    
+    .clm-lyric-header {
+        padding: 20px 15px; /* Reduce padding */
+        position: relative;
+    }
+    
+    /* Toggle button mobile fixes */
+    .clm-toggle-button {
+        display: flex; /* Ensure proper display on mobile */
+        width: auto;
+        min-height: 48px; /* Larger touch target */
+        padding: 12px 20px; /* Larger padding for easier tapping */
+        font-size: 16px; /* Prevent zoom on iOS and Chrome */
+        margin-top: 15px;
+        margin-bottom: 10px;
+        justify-content: center;
+        white-space: nowrap;
+        /* Enhanced Chrome mobile support */
+        -webkit-tap-highlight-color: rgba(0, 124, 186, 0.4);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-appearance: none;
+        appearance: none;
+        border: 2px solid #dcdcde; /* Slightly thicker border for better mobile visibility */
+    }
+    
+    /* Chrome mobile active state */
+    .clm-toggle-button:active {
+        background-color: #d1d5db;
+        transform: scale(0.95);
+        transition: all 0.1s ease;
+    }
+    
+    /* Detailed meta section mobile */
+    .clm-detailed-meta {
+        padding: 15px;
+        margin: 0 -15px; /* Extend to edges on mobile */
+        border-radius: 0;
+    }
+    
+    .clm-lyric-content-wrapper,
+    .clm-media-display-section,
+    .clm-lyric-footer,
+    .clm-lyric-sidebar > div {
+        padding: 20px;
+    }
+    
+    .clm-lyric-main-content {
+        flex-direction: column;
+        gap: 20px;
+        padding: 15px;
+    }
+    
+    .clm-lyric-text-content,
+    .clm-lyric-sidebar {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    /* Media display mobile fixes */
+    .clm-media-display-section {
+        padding: 15px;
+        margin: 0 -15px; /* Full width on mobile */
+    }
+    
+    .clm-media-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+        gap: 20px;
+    }
+    
+    .clm-media-item {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Video container mobile fixes */
+    .clm-video-embed-container,
+    .clm-video-wrapper,
+    .clm-video-container {
+        width: 100%;
+        margin: 10px 0;
+        border-radius: 4px;
+        /* Keep 16:9 aspect ratio */
+        padding-bottom: 56.25%;
+    }
+    
+    .clm-media-item .clm-video-embed-container {
+        margin: 0; /* Remove extra margin inside media items */
+    }
+    
+    .clm-results-info-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .clm-filters-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .clm-alpha-link {
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        margin: 2px;
+    }
+    
+    .clm-item-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .clm-media-nav-wrapper {
+        justify-content: flex-start;
+    }
+    
+    .clm-media-nav-item {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .clm-media-browser .clm-items-list {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+    }
+    
+    .clm-meta-grid,
+    .clm-practice-tracks-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .clm-lyrics-list {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Pagination responsive */
+    .clm-pagination a,
+    .clm-pagination span,
+    ul.page-numbers a,
+    ul.page-numbers span {
+        min-width: 36px;
+        height: 36px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .prev,
+    .next {
+        padding: 6px 12px;
+    }
+    
+    /* IMPROVED PLAYLIST DROPDOWN MOBILE STYLES */
+    .clm-playlist-dropdown {
+        /* On mobile, use more of the screen width */
+        min-width: 300px;
+        max-width: 95vw;
+        /* Center it better on mobile */
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+    
+    /* Override alignment classes on mobile - always center */
+    .clm-playlist-dropdown.clm-align-right,
+    .clm-playlist-dropdown.clm-align-left {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+}
+
 @media (max-width: 480px) {
+    .clm-container,
+    .clm-single-lyric-page-container {
+        padding: 10px;
+    }
+    
+    .clm-archive-title {
+        font-size: 1.8rem;
+    }
+    
+    .clm-lyric-title {
+        font-size: 1.6em;
+        line-height: 1.2;
+    }
+    
+    .clm-search-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    /* Toggle button - even more mobile friendly */
+    .clm-toggle-button {
+        width: 100%;
+        max-width: 280px;
+        margin: 15px auto;
+        padding: 15px 20px;
+        font-size: 16px;
+        justify-content: center;
+        text-align: center;
+        /* Extra Chrome mobile fixes for very small screens */
+        border: 2px solid #dcdcde;
+        -webkit-tap-highlight-color: rgba(0, 124, 186, 0.5);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        position: relative;
+        z-index: 10; /* Higher z-index on small screens */
+    }
+    
+    .clm-toggle-button:active {
+        background-color: #cbd5e1;
+        border-color: #94a3b8;
+        transform: scale(0.96);
+    }
+    
+    /* Video containers - ensure proper aspect ratio on small screens */
+    .clm-video-embed-container,
+    .clm-video-wrapper,
+    .clm-video-container {
+        margin: 15px 0;
+        border-radius: 4px;
+        /* Maintain aspect ratio even on very small screens */
+        padding-bottom: 56.25%;
+        min-height: 200px; /* Ensure minimum usable size */
+    }
+    
+    .clm-media-display-section {
+        padding: 10px;
+        margin: 0 -10px;
+    }
+    
+    .clm-media-item {
+        margin-bottom: 20px;
+    }
+    
+    .clm-detailed-meta {
+        padding: 10px;
+        margin: 0 -10px;
+    }
+    
+    .clm-checkbox-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
     .clm-attachment-icons {
         margin-left: 0;
-        margin-top: 5px;
+        margin-top: 8px;
     }
     
     .clm-item-title {
         flex-direction: column;
         align-items: flex-start;
+        gap: 8px;
     }
     
-    .clm-attachment-icon {
-        width: 22px;
-        height: 22px;
+    .clm-media-browser .clm-items-list {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Pagination mobile */
+    .clm-pagination-wrapper,
+    ul.page-numbers {
+        gap: 4px;
+    }
+    
+    .clm-pagination a,
+    .clm-pagination span,
+    ul.page-numbers a,
+    ul.page-numbers span {
+        min-width: 32px;
+        height: 32px;
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+    
+    .clm-page-jump {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .clm-page-jump-input {
+        width: 60px;
+    }
+    
+    .clm-lyric-header {
+        padding: 15px 10px;
+    }
+    
+    .clm-lyric-main-content {
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .clm-media-display-section {
+        padding: 10px;
+    }
+    
+    .clm-lyric-sidebar > div {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    /* IMPROVED PLAYLIST DROPDOWN VERY SMALL MOBILE */
+    .clm-playlist-dropdown {
+        /* On very small screens, use even more width */
+        min-width: 320px;
+        max-width: 98vw;
+        /* Reduce padding to maximize usable space */
+        padding: 12px;
+    }
+    
+    .clm-playlist-dropdown h4 {
+        font-size: 1em;
+        margin-bottom: 8px;
+    }
+    
+    .clm-create-new-playlist .clm-new-playlist-name {
+        padding: 10px;
+        font-size: 16px; /* Prevent zoom on iOS */
     }
 }
 
-/* Media Type Filter Checkboxes */
-.clm-checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 5px;
+/* ========================================================================
+   GRID LAYOUT SPECIFIC IMPROVEMENTS
+   ======================================================================== */
+
+/* When playlist dropdown is in a grid context (like media browser) */
+.clm-media-browser .clm-playlist-dropdown,
+.clm-items-list .clm-playlist-dropdown,
+.clm-media-card .clm-playlist-dropdown {
+    /* Ensure it doesn't get constrained by grid column width */
+    min-width: 320px;
+    /* Position it to not go off-screen */
+    left: auto;
+    right: 0;
+    transform: none;
 }
 
-.clm-checkbox-group label {
+/* If the dropdown is in the leftmost column, align it to the left */
+.clm-media-browser .clm-playlist-dropdown.clm-first-column,
+.clm-items-list .clm-playlist-dropdown.clm-first-column {
+    left: 0;
+    right: auto;
+}
+
+/* Center column gets centered dropdown */
+.clm-media-browser .clm-playlist-dropdown.clm-center-column,
+.clm-items-list .clm-playlist-dropdown.clm-center-column {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+}
+
+/* ========================================================================
+   DARK MODE SUPPORT
+   ======================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dark-bg-primary: #1a1a1a;
+        --dark-bg-secondary: #2d2d2d;
+        --dark-bg-tertiary: #3a3a3a;
+        --dark-bg-interactive: #4a4a4a;
+        --dark-text-primary: #ffffff;
+        --dark-text-secondary: #e0e0e0;
+        --dark-text-muted: #b0b0b0;
+        --dark-border-primary: #555555;
+        --dark-accent-blue: #4da6ff;
+        --dark-accent-blue-hover: #66b3ff;
+    }
+    
+    .clm-container,
+    .clm-single-lyric-page-container {
+        color: var(--dark-text-secondary);
+        background-color: var(--dark-bg-primary);
+    }
+    
+    .clm-lyric-article {
+        background-color: var(--dark-bg-secondary);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    
+    .clm-lyric-header,
+    .clm-detailed-meta,
+    .clm-lyric-footer {
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-lyric-title,
+    .clm-single-lyric-page-container h2,
+    .clm-single-lyric-page-container h3,
+    .clm-single-lyric-page-container h4 {
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-lyric-header-meta-summary {
+        color: var(--dark-text-muted);
+    }
+    
+    .clm-lyric-header-meta-summary .dashicons {
+        color: var(--dark-accent-blue);
+    }
+    
+    .clm-toggle-button {
+        background-color: var(--dark-bg-tertiary);
+        border-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-toggle-button:hover {
+        background-color: var(--dark-bg-interactive);
+    }
+    
+    .clm-detailed-meta {
+        background-color: var(--dark-bg-tertiary);
+    }
+    
+    .clm-meta-icon {
+        color: var(--dark-accent-blue);
+    }
+    
+    .clm-meta-label {
+        color: var(--dark-text-muted);
+    }
+    
+    .clm-meta-value {
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-meta-value a {
+        color: var(--dark-accent-blue);
+    }
+    
+    .clm-lyric-text-content .clm-lyric-content {
+        color: var(--dark-text-secondary);
+    }
+    
+    .clm-lyric-sidebar > div {
+        background-color: var(--dark-bg-tertiary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-lyric-sidebar h2 {
+        border-bottom-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    /* Practice Tracker Dark */
+    .clm-practice-stats-display h4,
+    #clm-practice-form-fields h4,
+    .clm-practice-history h4 {
+        color: var(--dark-text-secondary);
+    }
+    
+    .clm-practice-stats-display p,
+    #clm-practice-form-fields label {
+        color: var(--dark-text-muted);
+    }
+    
+    .clm-practice-stats-display .clm-stat-value,
+    #clm-practice-form-fields input,
+    #clm-practice-form-fields select,
+    #clm-practice-form-fields textarea {
+        color: var(--dark-text-primary);
+        background-color: var(--dark-bg-primary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-practice-stats-display .confidence-stars .dashicons {
+        color: var(--dark-accent-blue-hover);
+    }
+    
+    .clm-practice-history-table th {
+        background-color: var(--dark-bg-interactive);
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-practice-history-table td {
+        border-bottom-color: var(--dark-border-primary);
+    }
+    
+    .clm-practice-history-table td .dashicons {
+        color: var(--dark-accent-blue-hover);
+    }
+    
+    /* Skill Widget Dark */
+    .clm-set-goal-form {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-set-goal-form label {
+        color: var(--dark-text-muted);
+    }
+    
+    .clm-set-goal-form input[type="date"] {
+        background-color: var(--dark-bg-primary);
+        border-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    /* Playlist Dropdown Dark */
+    .clm-playlist-dropdown {
+        background-color: var(--dark-bg-tertiary);
+        border-color: var(--dark-border-primary);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    
+    .clm-playlist-dropdown h4 {
+        color: var(--dark-text-secondary);
+        border-bottom-color: var(--dark-border-primary);
+    }
+    
+    .clm-playlist-dropdown ul {
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-playlist-dropdown li a {
+        color: var(--dark-text-primary);
+        border-bottom-color: var(--dark-border-primary);
+    }
+    
+    .clm-playlist-dropdown li a:hover {
+        background-color: var(--dark-bg-interactive);
+    }
+    
+    .clm-create-new-playlist .clm-new-playlist-name {
+        background-color: var(--dark-bg-primary);
+        border-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-lyric-footer {
+        background-color: var(--dark-bg-tertiary);
+        border-top-color: var(--dark-border-primary);
+        color: var(--dark-text-muted);
+    }
+    
+    .clm-lyric-genres strong {
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-lyric-genres a {
+        color: var(--dark-accent-blue);
+    }
+    
+    /* Media Section Dark */
+    .clm-media-display-section {
+        background: var(--dark-bg-primary);
+    }
+    
+    .clm-media-item {
+        background: var(--dark-bg-secondary);
+    }
+    
+    .clm-media-item-title {
+        background: var(--dark-bg-interactive);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-file-link {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-file-link:hover {
+        background: var(--dark-bg-interactive);
+        border-color: var(--dark-accent-blue);
+    }
+    
+    /* Archive styles dark mode */
+    .clm-search-section,
+    .clm-advanced-filters,
+    .clm-alphabet-nav,
+    .clm-media-navigation {
+        background: var(--dark-bg-tertiary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-search-input {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
+        color: var(--dark-text-primary);
+    }
+    
+    .clm-lyric-item,
+    .clm-item,
+    .clm-lyric-card {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-media-card {
+        background: var(--dark-bg-secondary);
+    }
+    
+    .clm-skill-stat {
+        background: var(--dark-bg-secondary);
+        border-color: var(--dark-border-primary);
+    }
+    
+    .clm-progress-bar {
+        background: var(--dark-border-primary);
+    }
+}
+
+/* ========================================================================
+   PRINT STYLES
+   ======================================================================== */
+
+@media print {
+    .clm-search-section,
+    .clm-advanced-filters,
+    .clm-alphabet-nav,
+    .clm-pagination,
+    .clm-item-actions,
+    .clm-lyric-sidebar,
+    .clm-loading-overlay,
+    .clm-notification {
+        display: none !important;
+    }
+    
+    .clm-lyric-article {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .clm-lyric-main-content {
+        flex-direction: column;
+    }
+    
+    .clm-lyric-text-content {
+        width: 100%;
+    }
+}
+/* In public.css */
+.clm-my-playlists-list {
+    margin-bottom: 25px;
+}
+
+.clm-my-playlists-list h3 {
+    font-size: 1.3em;
+    margin-bottom: 15px;
+}
+
+.clm-my-playlists-list ul {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+    margin-bottom: 20px;
+}
+
+.clm-my-playlists-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    cursor: pointer;
 }
 
-.clm-checkbox-group input[type="checkbox"] {
-    margin-right: 5px;
+.clm-my-playlists-list li:last-child {
+    border-bottom: none;
 }
 
-.clm-checkbox-group .dashicons {
-    margin-right: 3px;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+.clm-my-playlists-list li a {
+    text-decoration: none;
+    font-weight: 500;
+    color: var(--clm-primary-color);
 }
 
-/* Colors for the filter icons */
-.clm-checkbox-group label:has(input[name="has_audio"]:checked) .dashicons {
-    color: #3498db;
+.clm-my-playlists-list li a:hover {
+    text-decoration: underline;
 }
 
-.clm-checkbox-group label:has(input[name="has_video"]:checked) .dashicons {
-    color: #e74c3c;
+.clm-playlist-track-count {
+    font-size: 0.85em;
+    color: var(--clm-text-light-color);
+    margin-left: 8px;
 }
 
-.clm-checkbox-group label:has(input[name="has_sheet"]:checked) .dashicons {
-    color: #27ae60;
+.clm-create-playlist-form-area {
+    /* Styles for the new playlist form from shortcode */
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #eee;
 }
 
-.clm-checkbox-group label:has(input[name="has_midi"]:checked) .dashicons {
-    color: #9b59b6;
-}
-.clm-attachment-icon {
-    display: inline-flex !important;
-    width: 24px !important;
-    height: 24px !important;
-    background-color: #f8f9fa !important;
+.clm-playlist-creation-message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 4px;
 }
 
-/* Ensure attachments and icons display properly */
-.clm-attachment-icons {
-    display: inline-flex !important;
-    margin-left: 10px !important;
-    align-items: center !important;
-    vertical-align: middle !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+.clm-playlist-creation-message.success {
+    background-color: #d4edda;
+    color: #155724;
 }
 
-.clm-attachment-icon {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 5px !important;
-    border-radius: 50% !important;
-    position: relative !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+.clm-playlist-creation-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+/* In public.css */
+.clm-single-playlist-display {
+    border: 1px solid var(--clm-border-color);
+    border-radius: var(--clm-border-radius);
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    background-color: var(--clm-lighter-bg-color);
 }
 
-/* Ensure the title can accommodate the icons */
-.clm-item-title {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
+.clm-single-playlist-display .clm-playlist-title {
+    font-size: 1.3em;
+    margin-bottom: 8px;
+    color: var(--clm-text-color);
 }
 
-/* Responsive adjustment */
-@media (max-width: 480px) {
-    .clm-attachment-icons {
-        margin-left: 0 !important;
-        margin-top: 5px !important;
+.clm-single-playlist-display .clm-playlist-description {
+    font-size: 0.9em;
+    color: var(--clm-text-light-color);
+    margin-bottom: 15px;
+}
+
+.clm-playlist-track-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.clm-playlist-track-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dotted #e0e0e0;
+}
+
+.clm-playlist-track-item:last-child {
+    border-bottom: none;
+}
+
+.clm-playlist-track-item .clm-track-title {
+    text-decoration: none;
+    color: var(--clm-primary-color);
+    flex-grow: 1;
+}
+
+.clm-playlist-track-item .clm-track-title:hover {
+    text-decoration: underline;
+}
+
+.clm-remove-from-playlist-button {
+    color: #a00 !important;
+    /* Make remove button red */
+    padding: 3px 5px !important;
+    /* Smaller padding for icon button */
+    text-decoration: none !important;
+    background: transparent !important;
+    /* Ensure transparent background */
+}
+
+.clm-remove-from-playlist-button .dashicons {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.clm-remove-from-playlist-button:hover {
+    color: #c00 !important;
+    background: rgba(200, 0, 0, 0.05) !important;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .clm-single-playlist-display {
+        background-color: var(--dark-bg-subtle);
+        border-color: var(--dark-border-primary);
     }
-    
-    .clm-item-title {
-        flex-direction: column !important;
-        align-items: flex-start !important;
+
+    .clm-single-playlist-display .clm-playlist-title {
+        color: var(--dark-text-primary);
     }
-}
 
-/* Add to the end of public.css */
+    .clm-single-playlist-display .clm-playlist-description {
+        color: var(--dark-text-muted);
+    }
 
-/* Fix for pagination links - ensure they're clickable */
-.clm-pagination a,
-.clm-shortcode-pagination a,
-.page-numbers a,
-a.page-numbers {
-    pointer-events: auto !important;
-    cursor: pointer !important;
-}
+    .clm-playlist-track-item {
+        border-bottom-color: var(--dark-border-primary);
+    }
 
-/* Fix for multiple highlighted "current" pages */
-.clm-page-link.clm-current,
-span.page-numbers.current,
-.clm-pagination span.current,
-.clm-shortcode-pagination span.current,
-ul.page-numbers span.current {
-    background-color: #007cba !important;
-    color: white !important;
-    border-color: #007cba !important;
-    font-weight: 600 !important;
-    pointer-events: none !important;
-}
+    .clm-playlist-track-item .clm-track-title {
+        color: var(--dark-accent-primary);
+    }
 
-/* Remove problematic rule that causes multiple current buttons */
-body:not([class*="paged-"]) .page-numbers a:first-of-type,
-body.paged-1 .page-numbers a:first-of-type,
-body:not([class*="paged-"]) .clm-pagination-wrapper a:first-of-type,
-body.paged-1 .clm-pagination-wrapper a:first-of-type {
-    background-color: white !important; 
-    color: #333 !important;
-    border-color: #ddd !important;
-    font-weight: normal !important;
-    pointer-events: auto !important;
-}
-/* Add to the end of public.css */
+    .clm-remove-from-playlist-button {
+        color: #ff8a8a !important;
+    }
 
-/* Enhanced Attachment Icons Styles */
-.clm-attachment-icons {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    margin-left: 10px !important;
-    align-items: center !important;
-    vertical-align: middle !important;
-    flex-wrap: nowrap !important;
-    pointer-events: auto !important;
-    z-index: 5 !important;
-    position: relative !important;
-}
-
-.clm-attachment-icon {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 5px !important;
-    border-radius: 50% !important;
-    position: relative !important;
-    z-index: 6 !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
-}
-
-/* Make sure emoji content remains visible */
-.clm-attachment-icon::before,
-.clm-attachment-icon::after {
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 7 !important;
-}
-
-/* Ensure the title layout accommodates the icons */
-.clm-item-title {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: 10px !important;
-}
-
-/* Force emoji content in case ::before/::after is being overridden */
-.clm-attachment-icon[data-icon="audio"]::after {
-    content: "🎵" !important;
-    visibility: visible !important;
-    display: inline !important;
-}
-
-.clm-attachment-icon[data-icon="video"]::after {
-    content: "🎬" !important;
-    visibility: visible !important;
-    display: inline !important;
-}
-
-.clm-attachment-icon[data-icon="sheet"]::after {
-    content: "📄" !important;
-    visibility: visible !important;
-    display: inline !important;
-}
-
-.clm-attachment-icon[data-icon="midi"]::after {
-    content: "🎹" !important;
-    visibility: visible !important;
-    display: inline !important;
+    .clm-remove-from-playlist-button:hover {
+        color: #ff5c5c !important;
+        background: rgba(255, 0, 0, 0.1) !important;
+    }
 }

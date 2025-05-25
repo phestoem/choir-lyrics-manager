@@ -1,0 +1,48 @@
+#clm-selected-tracks-list .clm-selected-track-item {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+#clm-selected-tracks-list .clm-sortable-handle {
+    cursor: move;
+    color: #888;
+    margin-right: 10px;
+}
+.clm-track-sortable-placeholder {
+    border: 1px dashed #ccc;
+    background: #f0f0f0;
+    height: 30px; /* Adjust to match item height */
+    margin-bottom: 5px;
+}
+#clm-lyric-search-results {
+    border: 1px solid #ddd;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    position: relative; /* Or absolute if needed relative to input */
+    z-index: 100;
+}
+#clm-lyric-search-results ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+#clm-lyric-search-results li {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+#clm-lyric-search-results li:hover {
+    background: #f0f0f0;
+}
+#clm-lyric-search-results li:last-child {
+    border-bottom: none;
+}
+.clm-no-tracks-message {
+    color: #777;
+    font-style: italic;
+}

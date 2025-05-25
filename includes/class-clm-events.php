@@ -78,7 +78,7 @@ class CLM_Events {
             'hierarchical'          => false,
             'public'                => true,
             'show_ui'               => true,
-            'show_in_menu'          => 'choir-lyrics-manager',
+            'show_in_menu'          => 'clm_dashboard',
             'menu_position'         => 5,
             'menu_icon'             => 'dashicons-calendar-alt',
             'show_in_admin_bar'     => true,

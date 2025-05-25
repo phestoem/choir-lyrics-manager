@@ -24,7 +24,7 @@ class CLM_Skills {
      * @var      string    $version    The current version of this plugin.
      */
     private $version;
-
+    private $db_table_name;
     /**
      * Initialize the class and set its properties.
      *
@@ -32,47 +32,62 @@ class CLM_Skills {
      * @param    string    $plugin_name       The name of this plugin.
      * @param    string    $version           The version of this plugin.
      */
-    public function __construct($plugin_name, $version) {
+   public function __construct($plugin_name, $version) {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
+        global $wpdb;
+        $this->db_table_name = $wpdb->prefix . 'clm_member_skills';
     }
 
-    /**
-     * Create skills tracking database table
-     *
-     * @since    1.0.0
-     */
-    public static function create_skills_table() {
-        global $wpdb;
+        /**
+         * Create/Update the clm_member_skills database table on plugin activation.
+         */
+        public static function create_skills_table() {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'clm_member_skills';
+            $charset_collate = $wpdb->get_charset_collate();
+
+            // Added performance_count for compatibility with your dashboard template
+            $sql = "CREATE TABLE $table_name (
+                id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                member_id bigint(20) UNSIGNED NOT NULL,
+                lyric_id bigint(20) UNSIGNED NOT NULL,
+                skill_level varchar(20) NOT NULL DEFAULT 'novice',
+                last_practice_date datetime DEFAULT NULL,
+                practice_count int(11) NOT NULL DEFAULT 0,
+                total_practice_minutes int(11) NOT NULL DEFAULT 0,
+                performance_count int(11) NOT NULL DEFAULT 0,
+                confidence_rating tinyint(1) DEFAULT NULL,
+                goal_date date DEFAULT NULL,
+                notes text DEFAULT NULL,
+                assessed_by bigint(20) UNSIGNED DEFAULT NULL,
+                assessed_date datetime DEFAULT NULL,
+                created_at datetime NOT NULL,
+                updated_at datetime NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY member_lyric (member_id, lyric_id),
+                KEY member_id (member_id),
+                KEY lyric_id (lyric_id),
+                KEY skill_level (skill_level)
+            ) $charset_collate;"; // Semicolon at the end of CREATE TABLE statement is important
         
-        $table_name = $wpdb->prefix . 'clm_member_skills';
-        $charset_collate = $wpdb->get_charset_collate();
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            
+            //error_log("CLM_DBDELTA_DEBUG: SQL for {$table_name}: " . $sql); // Log the exact SQL
+            $dbdelta_results = dbDelta($sql); 
         
-        $sql = "CREATE TABLE $table_name (
-            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            member_id bigint(20) UNSIGNED NOT NULL,
-            lyric_id bigint(20) UNSIGNED NOT NULL,
-            skill_level varchar(20) NOT NULL DEFAULT 'novice',
-            last_practice_date datetime DEFAULT NULL,
-            practice_count int(11) NOT NULL DEFAULT 0,
-            performance_count int(11) NOT NULL DEFAULT 0,
-            total_practice_minutes int(11) NOT NULL DEFAULT 0,
-            teacher_notes text,
-            assessed_by bigint(20) UNSIGNED DEFAULT NULL,
-            assessed_date datetime DEFAULT NULL,
-            goal_date date DEFAULT NULL,
-            achievement_badges text,
-            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY member_lyric (member_id, lyric_id),
-            KEY skill_level (skill_level),
-            KEY member_id (member_id),
-            KEY lyric_id (lyric_id)
-        ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
+            // Enhanced logging for dbDelta results
+            if (is_array($dbdelta_results) && !empty($dbdelta_results)) {
+                foreach ($dbdelta_results as $delta_message) {
+                    // error_log("CLM_DBDELTA_RESULT for {$table_name}: " . $delta_message);
+                }
+            } elseif (!empty($wpdb->last_error)) {
+                // error_log("CLM_DBDELTA_ERROR for {$table_name} (no array result but wpdb error exists): " . $wpdb->last_error);
+            } else {
+                // error_log("CLM_DBDELTA_INFO: No specific messages returned by dbDelta for {$table_name}, or table is up to date.");
+            }
+            // You can also log $wpdb->last_query here if issues persist to see what dbDelta tried to run
+            // if ($wpdb->last_query) error_log("CLM_DBDELTA_LAST_QUERY: " . $wpdb->last_query);
     }
 
     /**
@@ -128,37 +143,15 @@ class CLM_Skills {
      * @return   array    Array of skill levels.
      */
     public function get_skill_levels() {
-        return array(
-            'novice' => array(
-                'label' => __('Novice', 'choir-lyrics-manager'),
-                'description' => __('Does not know the piece', 'choir-lyrics-manager'),
-                'color' => '#dc3545',
-                'icon' => 'dashicons-warning',
-                'value' => 1
-            ),
-            'learning' => array(
-                'label' => __('Learning', 'choir-lyrics-manager'),
-                'description' => __('Has some knowledge', 'choir-lyrics-manager'),
-                'color' => '#ffc107',
-                'icon' => 'dashicons-lightbulb',
-                'value' => 2
-            ),
-            'proficient' => array(
-                'label' => __('Proficient', 'choir-lyrics-manager'),
-                'description' => __('Knows the piece well', 'choir-lyrics-manager'),
-                'color' => '#17a2b8',
-                'icon' => 'dashicons-yes',
-                'value' => 3
-            ),
-            'master' => array(
-                'label' => __('Master', 'choir-lyrics-manager'),
-                'description' => __('Has mastered the piece', 'choir-lyrics-manager'),
-                'color' => '#28a745',
-                'icon' => 'dashicons-star-filled',
-                'value' => 4
-            )
+         return array(
+            'unknown'    => array('label' => __('Unknown', 'choir-lyrics-manager'),    'color' => '#95a5a6', 'icon' => 'dashicons-editor-help',  'value' => 0, 'progress' => 0),
+            'novice'     => array('label' => __('Novice', 'choir-lyrics-manager'),      'color' => '#e74c3c', 'icon' => 'dashicons-warning',        'value' => 1, 'progress' => 20), // e.g. Red
+            'learning'   => array('label' => __('Learning', 'choir-lyrics-manager'),    'color' => '#f39c12', 'icon' => 'dashicons-lightbulb',      'value' => 2, 'progress' => 40), // e.g. Orange
+            'proficient' => array('label' => __('Proficient', 'choir-lyrics-manager'),  'color' => '#3498db', 'icon' => 'dashicons-yes-alt',        'value' => 3, 'progress' => 70), // e.g. Blue
+            'mastered'   => array('label' => __('Mastered', 'choir-lyrics-manager'),    'color' => '#2ecc71', 'icon' => 'dashicons-star-filled',    'value' => 4, 'progress' => 100) // e.g. Green
         );
     }
+
 
     /**
      * Add skills tracking meta box to lyrics
@@ -174,6 +167,290 @@ class CLM_Skills {
             'side',
             'default'
         );
+    }
+
+
+    public function get_skill_level_info($skill_level_slug) {
+        $levels = $this->get_skill_levels();
+        return isset($levels[$skill_level_slug]) ? $levels[$skill_level_slug] : $levels['unknown'];
+    }
+
+ 
+
+	public function update_member_skill_from_practice_session( $member_cpt_id, $lyric_id, $practice_duration_minutes, $practice_confidence ) {
+		global $wpdb;
+		$now_mysql_gmt = current_time('mysql', 1); // Get GMT time for database
+
+		$current_skill = $this->get_member_skill( $member_cpt_id, $lyric_id );
+
+		if ( $current_skill ) {
+			// --- UPDATE existing skill record ---
+			$data_to_update = array(
+				'last_practice_date' => $now_mysql_gmt,
+				'confidence_rating' => $practice_confidence,
+				'updated_at' => $now_mysql_gmt,
+				'practice_count' => $current_skill->practice_count + 1,
+				'total_practice_minutes' => $current_skill->total_practice_minutes + $practice_duration_minutes,
+			);
+			// Calculate new skill level based on updated counts and current confidence
+			$data_to_update['skill_level'] = $this->calculate_new_skill_level(
+				$current_skill->skill_level,
+				$data_to_update['practice_count'],
+				$data_to_update['total_practice_minutes'],
+				$practice_confidence // Use the confidence from this session
+			);
+
+			// Define formats for the fields being updated
+			$update_data_formats = array(
+				'%s', // last_practice_date
+				'%d', // confidence_rating
+				'%s', // updated_at
+				'%d', // practice_count
+				'%d', // total_practice_minutes
+				'%s'  // skill_level
+			);
+			
+
+			$result = $wpdb->update(
+				$this->db_table_name,
+				$data_to_update,
+				array( 'id' => $current_skill->id ), // WHERE condition
+				$update_data_formats,                // Format of data
+				array('%d')                          // Format of WHERE clause
+			);
+
+		} else {
+			// --- INSERT new skill record ---
+			$data_to_insert = array(
+				'member_id' => $member_cpt_id,
+				'lyric_id' => $lyric_id,
+				'skill_level' => 'novice', // Initial default before calculation
+				'last_practice_date' => $now_mysql_gmt,
+				'practice_count' => 1,
+				'total_practice_minutes' => $practice_duration_minutes,
+				'performance_count' => 0, // Default for new record
+				'confidence_rating' => $practice_confidence,
+				'created_at' => $now_mysql_gmt,
+				'updated_at' => $now_mysql_gmt
+				// goal_date, notes, assessed_by, assessed_date will use DB defaults (NULL or as defined)
+			);
+
+			// Calculate skill level for the very first entry based on this first practice
+			$data_to_insert['skill_level'] = $this->calculate_new_skill_level(
+				'novice', // Starting point for calculation
+				$data_to_insert['practice_count'],
+				$data_to_insert['total_practice_minutes'],
+				$practice_confidence
+			);
+			// $data_to_insert['skill_level'] should now be 'novice' or 'learning'
+
+			// Define formats for the fields being inserted (must match order of keys in $data_to_insert if not named)
+			// $wpdb->insert() prefers an associative array for $data, and an indexed array for $format
+			// if $format keys don't match $data keys. For clarity, ensure they match or use an indexed $format.
+			// The safest way is to provide an indexed format array that matches the column order $wpdb expects
+			// or rely on $wpdb to infer if types are simple. For explicit control:
+			$insert_data_formats = array(
+				'%d', // member_id
+				'%d', // lyric_id
+				'%s', // skill_level
+				'%s', // last_practice_date
+				'%d', // practice_count
+				'%d', // total_practice_minutes
+				'%d', // performance_count
+				'%d', // confidence_rating
+				'%s', // created_at
+				'%s'  // updated_at
+			);
+			// Note: The $data_to_insert array must have its keys in an order that $wpdb->insert expects
+			// if you use an indexed $insert_data_formats. Or, ensure $insert_data_formats is an associative array
+			// where keys match $data_to_insert (though $wpdb typically uses indexed for $format).
+			// To be very safe with indexed formats, ensure $data_to_insert keys are in a predictable order,
+			// or build the $insert_data_formats array by iterating over $data_to_insert keys.
+
+			// For $wpdb->insert, if the $format parameter is an array, its elements are mapped to the columns in $data.
+			// It's simpler to just pass the associative $data_to_insert and let $wpdb infer if types are simple,
+			// or provide a format array that matches the order of columns in your DB table if $data_to_insert also matches that order.
+			// However, passing an associative array for $data and an indexed array for $format is standard.
+			// The order of elements in $insert_data_formats must correspond to the order of elements in $data_to_insert
+			// as they would be iterated if $data_to_insert were treated as an numerically indexed array (which it's not).
+			// This is a common confusion point with $wpdb->insert.
+
+			// Let's simplify and rely on $wpdb's type inference for $data_to_insert,
+			// or be very explicit about order if providing $insert_data_formats.
+			// To avoid issues, it's often best to pass only $data_to_insert if types are simple,
+			// or construct $data_to_insert and $insert_data_formats with absolute matching order.
+
+			// Simpler approach for $wpdb->insert:
+			//error_log("CLM_SKILLS_DEBUG: Data for INSERT: " . print_r($data_to_insert, true));
+			// If $wpdb->insert is having trouble with formats, remove $insert_data_formats for simpler types,
+			// or ensure the format array keys/order perfectly align with $data_to_insert keys/order.
+			// $result = $wpdb->insert($this->db_table_name, $data_to_insert, $insert_data_formats);
+
+			// Let's try without explicit formats for insert first, $wpdb is usually good with this.
+			// If it fails or inserts wrong types, we'll add the $insert_data_formats array.
+			$result = $wpdb->insert($this->db_table_name, $data_to_insert);
+
+
+			if ( false === $result && !empty($wpdb->last_error) ) { // Check for DB error specifically
+				 error_log("CLM_SKILLS_DB_INSERT_ERROR: " . $wpdb->last_error . " | Query: " . $wpdb->last_query . " | Data: " . print_r($data_to_insert, true));
+			}
+		}
+
+		if ( false === $result ) {
+			return new WP_Error(
+				'db_error',
+				__('Could not update or insert member skill record in the database.', 'choir-lyrics-manager'),
+				array('last_db_error' => $wpdb->last_error, 'last_query' => $wpdb->last_query) // Include last query
+			);
+		}
+		return $this->get_member_skill( $member_cpt_id, $lyric_id );
+	}
+
+
+
+    private function calculate_new_skill_level( $current_level_slug, $practice_count, $total_minutes, $last_confidence ) {
+        $levels = $this->get_skill_levels();
+        $current_level_value = isset($levels[$current_level_slug]) ? $levels[$current_level_slug]['value'] : 0;
+        $new_level_slug = $current_level_slug;
+
+        // Define thresholds for progression (example)
+        $thresholds = array(
+            'novice' => array('min_sessions' => 1, 'min_confidence' => 2, 'next_level' => 'learning'),
+            'learning' => array('min_sessions' => 3, 'min_total_minutes' => 45, 'min_confidence' => 3, 'next_level' => 'proficient'),
+            'proficient' => array('min_sessions' => 5, 'min_total_minutes' => 90, 'min_confidence' => 4, 'next_level' => 'mastered'),
+            'mastered' => null, // Top level
+            'unknown' => array('min_sessions' => 1, 'min_confidence' => 1, 'next_level' => 'novice'), // From unknown to novice
+        );
+
+        if (isset($thresholds[$current_level_slug]) && $thresholds[$current_level_slug] !== null) {
+            $rules = $thresholds[$current_level_slug];
+            $can_progress = true;
+
+            if (isset($rules['min_sessions']) && $practice_count < $rules['min_sessions']) $can_progress = false;
+            if (isset($rules['min_total_minutes']) && $total_minutes < $rules['min_total_minutes']) $can_progress = false;
+            if (isset($rules['min_confidence']) && $last_confidence < $rules['min_confidence']) $can_progress = false;
+
+            if ($can_progress) {
+                $new_level_slug = $rules['next_level'];
+            }
+        }
+		
+		// Ensure we always return a valid slug, not an integer or the $current_level_value
+		// If $new_level_slug is still, for instance, 'unknown' from an initial state, that's fine.
+		// But if $current_level_slug was invalid and $new_level_slug didn't change, we need a default.
+		if (!isset($levels[$new_level_slug])) {
+			return 'novice'; // Default to 'novice' if something went very wrong or current_level_slug was invalid
+		}
+		
+        return $new_level_slug;
+    }
+
+    public function ajax_set_lyric_skill_goal() {
+        if ( ! is_user_logged_in() ) {
+            wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'choir-lyrics-manager' ) ) );
+            return;
+        }
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field(wp_unslash($_POST['nonce'])), 'clm_skills_nonce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Security check failed (nonce).', 'choir-lyrics-manager' ) ) );
+            return;
+        }
+        if ( empty( $_POST['lyric_id'] ) || empty( $_POST['goal_date'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Lyric ID and Goal Date are required.', 'choir-lyrics-manager' ) ) );
+            return;
+        }
+
+        $wp_user_id = get_current_user_id();
+        $lyric_id   = intval( $_POST['lyric_id'] );
+        $goal_date_str  = sanitize_text_field( $_POST['goal_date'] );
+
+        if ( ! preg_match( "/^\d{4}-\d{2}-\d{2}$/", $goal_date_str ) ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid goal date format. Please use YYYY-MM-DD.', 'choir-lyrics-manager' ) ) );
+            return;
+        }
+        if (get_post_type($lyric_id) !== 'clm_lyric' || get_post_status($lyric_id) !== 'publish') {
+             wp_send_json_error(array('message' => __('Invalid or non-published Lyric ID.', 'choir-lyrics-manager')));
+             return;
+        }
+
+        $member_cpt_id = null;
+        if (class_exists('CLM_Members')) {
+            $members_manager = new CLM_Members($this->plugin_name, $this->version);
+            $member_cpt_id = $members_manager->get_member_cpt_id_by_user_id($wp_user_id);
+        }
+        if ( ! $member_cpt_id ) {
+            wp_send_json_error( array( 'message' => __( 'Associated member profile not found.', 'choir-lyrics-manager' ) ) );
+            return;
+        }
+
+        global $wpdb;
+        $now_mysql_gmt = current_time('mysql', 1);
+        $current_skill = $this->get_member_skill( $member_cpt_id, $lyric_id );
+
+        if ( $current_skill ) {
+            $result = $wpdb->update(
+                $this->db_table_name,
+                array( 'goal_date' => $goal_date_str, 'updated_at' => $now_mysql_gmt ),
+                array( 'id' => $current_skill->id ),
+                array( '%s', '%s' ),
+                array( '%d' )
+            );
+        } else {
+            $result = $wpdb->insert(
+                $this->db_table_name,
+                array(
+                    'member_id'  => $member_cpt_id,
+                    'lyric_id'   => $lyric_id,
+                    'skill_level'=> 'novice',
+                    'goal_date'  => $goal_date_str,
+                    'created_at' => $now_mysql_gmt,
+                    'updated_at' => $now_mysql_gmt,
+                    'performance_count' => 0, // Default for new record
+                ),
+                array('%d', '%d', '%s', '%s', '%s', '%s', '%d')
+            );
+        }
+
+        if ( false === $result ) {
+            wp_send_json_error( array( 'message' => __( 'Failed to set skill goal.', 'choir-lyrics-manager' ), 'db_error' => $wpdb->last_error ) );
+        } else {
+            wp_send_json_success( array( 'message' => __( 'Skill goal updated successfully.', 'choir-lyrics-manager' ), 'goal_date' => $goal_date_str ) );
+        }
+    }
+
+  
+
+    public function get_member_skills_with_lyric_titles( $member_cpt_id ) {
+        global $wpdb;
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT ms.*, p.post_title as lyric_title
+             FROM {$this->db_table_name} ms
+             JOIN {$wpdb->posts} p ON ms.lyric_id = p.ID AND p.post_type = 'clm_lyric' AND p.post_status = 'publish'
+             WHERE ms.member_id = %d
+             ORDER BY p.post_title ASC",
+            $member_cpt_id
+        ) );
+    }
+    
+    public function get_lyric_skill_distribution( $lyric_id ) {
+        global $wpdb;
+        $results = $wpdb->get_results( $wpdb->prepare(
+            "SELECT skill_level, COUNT(id) as count
+             FROM {$this->db_table_name}
+             WHERE lyric_id = %d
+             GROUP BY skill_level",
+            $lyric_id
+        ), ARRAY_A );
+
+        $distribution = array();
+        foreach ($this->get_skill_levels() as $slug => $info) {
+            $distribution[$slug] = array('label' => $info['label'], 'count' => 0, 'color' => $info['color'], 'icon' => $info['icon'], 'progress' => $info['progress']);
+        }
+        foreach ($results as $row) {
+            if (isset($distribution[$row['skill_level']])) {
+                $distribution[$row['skill_level']]['count'] = (int) $row['count'];
+            }
+        }
+        return $distribution;
     }
 
     /**
@@ -239,6 +516,121 @@ class CLM_Skills {
         <?php
     }
 
+
+    /**
+     * Render the skill status widget for a given lyric for the current user (frontend).
+     *
+     * @param int $lyric_id The ID of the lyric.
+     * @return string HTML output for the widget.
+     */
+    public function render_skill_widget($lyric_id) {
+        if (!is_user_logged_in()) {
+            // Optionally return a message or empty string if user not logged in
+            // return '<p class="clm-notice">' . __('Please log in to view your skill status.', 'choir-lyrics-manager') . '</p>';
+            return ''; // Or simply return nothing if it shouldn't show for guests
+        }
+        if (!class_exists('CLM_Members')) {
+            error_log('CLM_Skills::render_skill_widget - CLM_Members class not found.');
+            return '<p class="clm-error">Member system not available.</p>';
+        }
+
+        $wp_user_id = get_current_user_id();
+        $members_manager = new CLM_Members($this->plugin_name, $this->version);
+        $member_cpt_id = $members_manager->get_member_cpt_id_by_user_id($wp_user_id);
+
+        if (!$member_cpt_id) {
+            // This message might be better placed in the template that calls this widget
+            // return '<p class="clm-notice">' . __('Associated member profile not found. Cannot display skill status.', 'choir-lyrics-manager') . '</p>';
+            return ''; // Or return a specific placeholder if member profile is required.
+        }
+
+        $skill = $this->get_member_skill($member_cpt_id, $lyric_id);
+		
+        $skill_info = $skill ? $this->get_skill_level_info($skill->skill_level) : $this->get_skill_level_info('novice');
+        $goal_date_formatted = $skill && $skill->goal_date ? date_i18n(get_option('date_format'), strtotime($skill->goal_date)) : '';
+        
+        // Prepare default values for the goal date input
+        $default_goal_date_input = $skill && $skill->goal_date ? $skill->goal_date : date('Y-m-d', strtotime('+1 month'));
+
+
+        ob_start();
+        ?>
+        <div class="clm-skill-status-widget" data-lyric-id="<?php echo esc_attr($lyric_id); ?>">
+            <?php /* The <h4>Your Skill Level</h4> can be added by the parent template if preferred */ ?>
+            <div class="clm-current-skill-display">
+                <span class="clm-skill-badge" 
+                      style="background-color:<?php echo esc_attr($skill_info['color']); ?>; color:white; padding: 5px 10px; display:inline-block; border-radius:4px; margin-right: 10px;">
+                    <span class="dashicons <?php echo esc_attr($skill_info['icon']); ?>"></span>
+                    <?php echo esc_html($skill_info['label']); ?>
+                </span>
+
+                <?php if ($skill && $skill->goal_date): ?>
+                    <span class="clm-skill-goal-date-container">
+                        <strong><?php _e('Goal:', 'choir-lyrics-manager'); ?></strong>
+                        <span class="clm-skill-goal-date-display"><?php echo esc_html($goal_date_formatted); ?></span>
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <div class="clm-skill-details-for-widget" style="font-size:0.9em; margin-top:5px;">
+                <?php if ($skill) : ?>
+                    <span><?php printf(_n('%s session', '%s sessions', $skill->practice_count, 'choir-lyrics-manager'), esc_html($skill->practice_count)); ?></span>
+                    | <span><?php echo esc_html($this->format_minutes($skill->total_practice_minutes)); ?> <?php _e('total', 'choir-lyrics-manager'); ?></span>
+                <?php else: ?>
+                    <span><?php _e('No practice logged for this skill yet.', 'choir-lyrics-manager'); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <button type="button" 
+                    class="clm-set-skill-goal-button clm-button clm-button-small" 
+                    data-lyric-id="<?php echo esc_attr($lyric_id); ?>" 
+                    data-current-goal="<?php echo esc_attr($skill ? $skill->goal_date : ''); ?>"
+                    style="margin-top: 10px;">
+                <?php echo ($skill && $skill->goal_date) ? esc_html__('Change Goal', 'choir-lyrics-manager') : esc_html__('Set Goal', 'choir-lyrics-manager'); ?>
+            </button>
+
+            <div id="clm-set-goal-form-container-<?php echo esc_attr($lyric_id); ?>" class="clm-set-goal-form" style="display:none; margin-top:10px; padding:10px; border:1px solid #eee; background:#f9f9f9;">
+                <p>
+                    <label for="clm-goal-date-input-<?php echo esc_attr($lyric_id); ?>"><?php _e('New Goal Date:', 'choir-lyrics-manager'); ?></label><br>
+                    <input type="date" id="clm-goal-date-input-<?php echo esc_attr($lyric_id); ?>" value="<?php echo esc_attr($default_goal_date_input); ?>" min="<?php echo date('Y-m-d'); ?>">
+                </p>
+                <button type="button" class="clm-submit-new-goal clm-button clm-button-primary clm-button-small" data-lyric-id="<?php echo esc_attr($lyric_id); ?>"><?php _e('Save Goal', 'choir-lyrics-manager'); ?></button>
+                <button type="button" class="clm-cancel-new-goal clm-button-text"><?php _e('Cancel', 'choir-lyrics-manager'); ?></button>
+                <div class="clm-set-goal-message" style="display:none; margin-top:5px;"></div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // Make sure format_minutes method is present in this class if called with $this->format_minutes
+    // Or, if it's in CLM_Practice, call it via an instance of CLM_Practice.
+    // For now, let's assume it's also in CLM_Skills for simplicity of this widget.
+    /**
+     * Format minutes to readable duration
+     * (Duplicate from CLM_Practice for standalone use here, consider a utility class)
+     */
+    public function format_minutes($minutes) {
+        $minutes = intval($minutes);
+        if ($minutes < 1) return __('0 minutes', 'choir-lyrics-manager');
+        if ($minutes < 60) {
+            return sprintf(_n('%d minute', '%d minutes', $minutes, 'choir-lyrics-manager'), $minutes);
+        }
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        if ($mins === 0) {
+            return sprintf(_n('%d hour', '%d hours', $hours, 'choir-lyrics-manager'), $hours);
+        }
+        return sprintf(
+            _n('%d hour', '%d hours', $hours, 'choir-lyrics-manager') . ', ' . _n('%d minute', '%d minutes', $mins, 'choir-lyrics-manager'),
+            $hours,
+            $mins
+        );
+    }
+
+ 
+
+
     /**
      * Get all skills for a lyric
      *
@@ -295,20 +687,14 @@ class CLM_Skills {
      * @param    int       $lyric_id     The lyric ID.
      * @return   object|null             The skill record or null.
      */
-    public function get_member_skill($member_id, $lyric_id) {
-        global $wpdb; 
-        
-        $table_name = $wpdb->prefix . 'clm_member_skills';
-        
-        $skill = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE member_id = %d AND lyric_id = %d",
-            $member_id,
+  public function get_member_skill( $member_cpt_id, $lyric_id ) { // Parameter $member_cpt_id
+        global $wpdb;
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$this->db_table_name} WHERE member_id = %d AND lyric_id = %d", // Uses $this->db_table_name
+            $member_cpt_id,
             $lyric_id
-        ));
-        
-        return $skill;
+        ) );
     }
-
     /**
      * Update member skill
      *
@@ -632,48 +1018,22 @@ class CLM_Skills {
         );
         
         // Recent achievements
-        $stats['recent_achievements'] = $wpdb->get_results(
-            "SELECT * FROM $table_name 
-            WHERE $where_sql 
-            AND (
-                date_achieved_learning >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                OR date_achieved_proficient >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                OR date_achieved_master >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            )
-            ORDER BY updated_at DESC 
-            LIMIT 10"
-        );
+        $stats['recent_achievements'] = $wpdb->get_results( $wpdb->prepare(
+            "SELECT s.*, m.post_title as member_name, l.post_title as lyric_title
+            FROM {$this->db_table_name} s
+            LEFT JOIN {$wpdb->posts} m ON s.member_id = m.ID
+            LEFT JOIN {$wpdb->posts} l ON s.lyric_id = l.ID
+            WHERE {$where_sql} 
+            AND s.updated_at >= DATE_SUB(NOW(), INTERVAL %d DAY)
+            ORDER BY s.updated_at DESC
+            LIMIT 10",
+            30 // Get skills updated in the last 30 days
+        ) );
         
         return $stats;
     }
 
-    /**
-     * Format minutes to readable duration
-     *
-     * @since    1.0.0
-     * @param    int       $minutes    Number of minutes
-     * @return   string                Formatted duration string
-     */
-    public function format_minutes($minutes) {
-        $minutes = intval($minutes);
-        
-        if ($minutes < 60) {
-            return sprintf(_n('%d minute', '%d minutes', $minutes, 'choir-lyrics-manager'), $minutes);
-        }
-        
-        $hours = floor($minutes / 60);
-        $mins = $minutes % 60;
-        
-        if ($mins === 0) {
-            return sprintf(_n('%d hour', '%d hours', $hours, 'choir-lyrics-manager'), $hours);
-        }
-        
-        return sprintf(
-            __('%1$d hours, %2$d minutes', 'choir-lyrics-manager'),
-            $hours,
-            $mins
-        );
-    }
+  
 
     /**
      * Get recent practice sessions
